@@ -59,7 +59,7 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         layout.addWidget(self.clear_marks_button)
 
         self.generate_pfd_button = QtWidgets.QPushButton(
-            'Gerar PFD', self
+            'Gerar PDF', self
         )
         layout.addWidget(self.generate_pfd_button)
 

@@ -12,6 +12,11 @@ Plugin para captura de pontos no mapa, armazenamento de coordenadas em WGS84 e a
 - `guia_de_campo_service.py`: camada de servico que conecta eventos da UI com regras de negocio.
 - `modules/canvas_marker_tool.py`: captura de clique no canvas, marcadores visuais, labels numericos e coordenadas WGS84.
 - `modules/map_tools.py`: utilitarios de mapa (ex.: adicionar camada Google Hybrid).
+- `modules/pdf/composer.py`: orquestracao da geracao de PDF sem acoplar regras em um unico arquivo.
+- `modules/pdf/canvas_snapshot.py`: captura da visao atual do canvas para inserir no PDF.
+- `modules/pdf/links.py`: geracao de links Google Maps por ponto (WGS84).
+- `modules/pdf/html_template.py`: template HTML com layout mobile-friendly para lista de pontos.
+- `modules/pdf/writer.py`: escrita de PDF usando Qt nativo (`QPrinter` + `QTextDocument`).
 - `resources.py` / `resources.qrc`: recursos Qt (icone e afins).
 - `metadata.txt`: metadados exigidos pelo QGIS Plugin Manager.
 
@@ -44,10 +49,14 @@ Plugin para captura de pontos no mapa, armazenamento de coordenadas em WGS84 e a
 
 - Botao `Limpar marcacoes` remove marcadores, labels e coordenadas salvas.
 
-### Gerar PFD (debug)
+### Gerar PDF
 
-- Botao `Gerar PFD` imprime as coordenadas salvas no console Python do QGIS.
-- Observacao: nome atual do metodo/acao esta como `PFD` para manter compatibilidade com o estado atual da UI.
+- Botao `Gerar PDF` abre o seletor de arquivo para salvar o relatorio.
+- O PDF inclui:
+	- screenshot da visao atual do canvas (com marcacoes visiveis);
+	- lista numerada de pontos em WGS84;
+	- links clicaveis grandes para Google Maps (`https://maps.google.com/?q=lat,lon`) com foco em uso mobile.
+- O metodo interno ainda pode manter o nome `generate_pfd` por compatibilidade de integracao, mas a funcionalidade agora e PDF real.
 
 ### Camada Google Hybrid
 
@@ -73,6 +82,5 @@ Plugin para captura de pontos no mapa, armazenamento de coordenadas em WGS84 e a
 
 ## Suggested Next Improvements
 
-- Renomear `Gerar PFD` para `Gerar PDF` (UI + metodo) quando quiser limpar nomenclatura.
-- Persistir coordenadas em arquivo (CSV/GeoJSON) alem do console.
+- Persistir coordenadas em arquivo (CSV/GeoJSON) alem do PDF.
 - Adicionar testes basicos para funcoes de transformacao e limpeza de estado.

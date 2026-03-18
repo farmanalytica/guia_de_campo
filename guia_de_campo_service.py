@@ -1,7 +1,11 @@
 from qgis.core import Qgis
+from qgis.PyQt.QtCore import QUrl
+from qgis.PyQt.QtGui import QDesktopServices
+from qgis.PyQt.QtWidgets import QFileDialog
 
 from .modules.canvas_marker_tool import CanvasMarkerTool
 from .modules.map_tools import hybrid_function
+from .modules.pdf import PdfReportComposer
 
 
 class GuiaDeCampoService:
@@ -11,6 +15,7 @@ class GuiaDeCampoService:
         """Initialize services that require access to QGIS interface."""
         self.iface = iface
         self.marker_tool = CanvasMarkerTool(self.iface)
+        self.pdf_composer = PdfReportComposer(self.iface)
 
     def toggle_mark_mode(self, enabled):
         """Enable or disable interactive point capture from the checkbox."""
@@ -73,15 +78,49 @@ class GuiaDeCampoService:
             )
 
     def generate_pfd(self):
-        """Print saved coordinates to the Python console for debugging."""
+        """Generate PDF report with current canvas screenshot and map links."""
         coordinates = self.marker_tool.coordinates
-        print('Coordenadas salvas ({}):'.format(len(coordinates)))
-        for i, (x, y) in enumerate(coordinates, start=1):
-            print('{}. x={}, y={}'.format(i, x, y))
+        if not coordinates:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Nenhum ponto marcado. Adicione pontos no mapa antes de gerar o PDF.',
+                level=Qgis.Warning,
+                duration=4,
+            )
+            return
+
+        output_path, _ = QFileDialog.getSaveFileName(
+            None,
+            'Salvar PDF da Guia de Campo',
+            'guia_de_campo.pdf',
+            'PDF Files (*.pdf)',
+        )
+        if not output_path:
+            return
+
+        try:
+            final_path = self.pdf_composer.generate(coordinates, output_path)
+        except Exception as exc:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Erro ao gerar PDF: {}'.format(exc),
+                level=Qgis.Critical,
+                duration=6,
+            )
+            return
 
         self.iface.messageBar().pushMessage(
             'Guia de Campo',
-            'Coordenadas enviadas para o console.',
-            level=Qgis.Info,
-            duration=3,
+            'PDF gerado com sucesso: {}'.format(final_path),
+            level=Qgis.Success,
+            duration=5,
         )
+
+        opened = QDesktopServices.openUrl(QUrl.fromLocalFile(final_path))
+        if not opened:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'PDF salvo, mas nao foi possivel abrir automaticamente.',
+                level=Qgis.Warning,
+                duration=4,
+            )
