@@ -15,7 +15,7 @@ def build_points_html(mark_items):
                 <a href=\"{url}\" class=\"mark-link\">
                     <span class=\"title\">Ponto {index}</span>
                     <span class=\"coords\">Lat: {lat} | Lon: {lon}</span>
-                    <span class=\"action\">Abrir no Google Maps</span>
+                <span class=\"action\">Abrir no Google Maps</span>
                 </a>
             </li>
             """.format(
@@ -32,23 +32,34 @@ def build_points_html(mark_items):
       <meta charset=\"utf-8\" />
       <style>
         body {{ font-family: Arial, sans-serif; color: #111; margin: 0; padding: 0; }}
-        .content {{ padding: 8px 12px 12px 12px; }}
-        h2 {{ font-size: 14pt; margin: 0 0 8px 0; }}
-        .meta {{ font-size: 10pt; color: #444; margin: 0 0 12px 0; }}
+        .content {{ padding: 12px 14px 14px 14px; }}
+        h2 {{ font-size: 17pt; margin: 0 0 8px 0; }}
+        .meta {{ font-size: 10pt; color: #444; margin: 0 0 18px 0; }}
         .mark-list {{ list-style: none; padding: 0; margin: 0; }}
-        .mark-item {{ margin: 0 0 10px 0; }}
+        .mark-item {{ margin: 0 0 28px 0; page-break-inside: avoid; }}
         .mark-link {{
           display: block;
           text-decoration: none;
-          color: #111;
-          border: 1px solid #c7c7c7;
-          background: #f7f7f7;
-          border-radius: 8px;
-          padding: 12px;
+          color: #0f172a;
+          border: 2px solid #0b3f75;
+          border-bottom-width: 5px;
+          background: #fefefe;
+          border-radius: 14px;
+          padding: 22px 20px;
+          min-height: 120px;
         }}
-        .title {{ display: block; font-size: 13pt; font-weight: bold; margin-bottom: 4px; }}
-        .coords {{ display: block; font-size: 11pt; margin-bottom: 6px; }}
-        .action {{ display: block; font-size: 11pt; color: #0057a3; font-weight: bold; }}
+        .title {{ display: block; font-size: 17pt; font-weight: bold; margin-bottom: 10px; }}
+        .coords {{ display: block; font-size: 12pt; color: #1f2937; margin-bottom: 16px; }}
+        .action {{
+          display: inline-block;
+          font-size: 13pt;
+          font-weight: bold;
+          color: #ffffff;
+          background: #0b4a8b;
+          border: 1px solid #08345f;
+          border-radius: 9px;
+          padding: 8px 14px;
+        }}
       </style>
     </head>
     <body>
