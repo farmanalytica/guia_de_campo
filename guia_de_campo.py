@@ -201,17 +201,17 @@ class GuiaDeCampo:
             self.dlg.clear_marks_button.clicked.connect(
                 self.service.clear_marks
             )
+            self.dlg.remove_last_mark_button.clicked.connect(
+                self.service.remove_last_mark
+            )
             self.dlg.generate_pfd_button.clicked.connect(
                 self.service.generate_pfd
             )
             self.dlg.mark_on_canvas_checkbox.toggled.connect(
                 self.service.toggle_mark_mode
             )
-            self.dlg.button_box.accepted.connect(
-                lambda: self.service.on_dialog_button_clicked('ok')
-            )
-            self.dlg.button_box.rejected.connect(
-                lambda: self.service.on_dialog_button_clicked('cancel')
+            self.dlg.add_manual_coordinate_button.clicked.connect(
+                lambda: self.service.add_manual_coordinate(self.dlg)
             )
             self.dlg.finished.connect(
                 lambda _: self.dlg.mark_on_canvas_checkbox.setChecked(False)

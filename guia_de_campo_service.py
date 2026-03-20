@@ -1,7 +1,9 @@
 from qgis.core import Qgis
-from qgis.PyQt.QtCore import QUrl
+from qgis.PyQt.QtCore import QStandardPaths, QUrl
 from qgis.PyQt.QtGui import QDesktopServices
 from qgis.PyQt.QtWidgets import QFileDialog
+
+import os
 
 from .modules.canvas_marker_tool import CanvasMarkerTool
 from .modules.map_tools import hybrid_function
@@ -59,6 +61,26 @@ class GuiaDeCampoService:
             duration=3,
         )
 
+    def remove_last_mark(self):
+        """Remove only the most recently captured map mark."""
+        removed = self.marker_tool.remove_last()
+        if not removed:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Nenhuma marcação para remover.',
+                level=Qgis.Warning,
+                duration=3,
+            )
+            return
+
+        n = len(self.marker_tool.coordinates)
+        self.iface.messageBar().pushMessage(
+            'Guia de Campo',
+            'Última marcação removida. {} ponto(s) restante(s).'.format(n),
+            level=Qgis.Info,
+            duration=3,
+        )
+
     def add_hybrid_layer(self):
         """Call map_tools.hybrid_function and show feedback in QGIS."""
         try:
@@ -77,6 +99,70 @@ class GuiaDeCampoService:
                 duration=5,
             )
 
+    def add_manual_coordinate(self, dialog):
+        """Validate manual decimal WGS84 input and create a numbered map point."""
+        latitude_text = dialog.manual_latitude_input.text().strip()
+        longitude_text = dialog.manual_longitude_input.text().strip()
+
+        if not latitude_text or not longitude_text:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Preencha latitude e longitude para adicionar a coordenada manual.',
+                level=Qgis.Warning,
+                duration=4,
+            )
+            return
+
+        try:
+            latitude = self._parse_decimal(latitude_text)
+            longitude = self._parse_decimal(longitude_text)
+        except ValueError:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Coordenadas inválidas. Use formato decimal (ex.: -23.550520).',
+                level=Qgis.Warning,
+                duration=4,
+            )
+            return
+
+        if latitude < -90 or latitude > 90:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Latitude fora do intervalo permitido (-90 a 90).',
+                level=Qgis.Warning,
+                duration=4,
+            )
+            return
+
+        if longitude < -180 or longitude > 180:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Longitude fora do intervalo permitido (-180 a 180).',
+                level=Qgis.Warning,
+                duration=4,
+            )
+            return
+
+        try:
+            self.marker_tool.add_wgs84_point(latitude, longitude)
+        except Exception as exc:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Erro ao adicionar coordenada manual: {}'.format(exc),
+                level=Qgis.Critical,
+                duration=5,
+            )
+            return
+
+        dialog.manual_latitude_input.clear()
+        dialog.manual_longitude_input.clear()
+        dialog.manual_latitude_input.setFocus()
+
+    def _parse_decimal(self, value):
+        """Parse decimal coordinate text, accepting comma or dot separators."""
+        normalized = value.replace(',', '.')
+        return float(normalized)
+
     def generate_pfd(self):
         """Generate PDF report with current canvas screenshot and map links."""
         coordinates = self.marker_tool.coordinates
@@ -89,10 +175,13 @@ class GuiaDeCampoService:
             )
             return
 
+        download_dir = QStandardPaths.writableLocation(QStandardPaths.DownloadLocation)
+        default_pdf_path = os.path.join(download_dir, 'guia_de_campo.pdf') if download_dir else 'guia_de_campo.pdf'
+
         output_path, _ = QFileDialog.getSaveFileName(
             None,
             'Salvar PDF da Guia de Campo',
-            'guia_de_campo.pdf',
+            default_pdf_path,
             'PDF Files (*.pdf)',
         )
         if not output_path:

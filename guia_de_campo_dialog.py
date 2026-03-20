@@ -22,7 +22,7 @@
  ***************************************************************************/
 """
 
-from qgis.PyQt import QtCore, QtWidgets
+from qgis.PyQt import QtCore, QtGui, QtWidgets
 
 
 class GuiaDeCampoDialog(QtWidgets.QDialog):
@@ -33,12 +33,116 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         super(GuiaDeCampoDialog, self).__init__(parent)
         self.setWindowTitle('Guia de Campo')
         self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, True)
-        self.resize(420, 160)
+        self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint, True)
+
+        self.resize(420, 250)
+        self.setStyleSheet(
+            """
+            QPushButton {
+                min-height: 34px;
+                border-radius: 6px;
+                border: 1px solid #CBD5E0;
+                padding: 6px 12px;
+                font-weight: 600;
+                background-color: #F7FAFC;
+                color: #1A202C;
+            }
+            QPushButton:hover {
+                background-color: #EDF2F7;
+            }
+            QPushButton:pressed {
+                background-color: #E2E8F0;
+            }
+            QPushButton#hybridButton {
+                background-color: #E6FFFA;
+                border: 1px solid #81E6D9;
+                color: #234E52;
+            }
+            QPushButton#hybridButton:hover {
+                background-color: #B2F5EA;
+            }
+            QPushButton#clearButton {
+                background-color: #FFF5F5;
+                border: 1px solid #FEB2B2;
+                color: #742A2A;
+            }
+            QPushButton#clearButton:hover {
+                background-color: #FED7D7;
+            }
+            QPushButton#removeLastButton {
+                background-color: #FFF9DB;
+                border: 1px solid #F6E05E;
+                color: #744210;
+            }
+            QPushButton#removeLastButton:hover {
+                background-color: #FAF089;
+            }
+            QPushButton#generateButton {
+                background-color: #2B6CB0;
+                border: 1px solid #2C5282;
+                color: #FFFFFF;
+            }
+            QPushButton#generateButton:hover {
+                background-color: #2C5282;
+            }
+            QPushButton#generateButton:pressed {
+                background-color: #1A365D;
+            }
+            QCheckBox {
+                spacing: 10px;
+                color: #1A202C;
+                font-weight: 600;
+                padding: 4px 2px;
+            }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border-radius: 4px;
+                border: 1px solid #A0AEC0;
+                background: #FFFFFF;
+            }
+            QCheckBox::indicator:hover {
+                border: 1px solid #2B6CB0;
+                background: #EBF8FF;
+            }
+            QCheckBox::indicator:checked {
+                border: 1px solid #2B6CB0;
+                background: #2B6CB0;
+                image: url(:/images/themes/default/mIconSuccess.svg);
+            }
+            QCheckBox::indicator:checked:hover {
+                border: 1px solid #2C5282;
+                background: #2C5282;
+                image: url(:/images/themes/default/mIconSuccess.svg);
+            }
+            QLineEdit {
+                min-height: 32px;
+                border: 1px solid #CBD5E0;
+                border-radius: 6px;
+                padding: 4px 8px;
+                background: #FFFFFF;
+                color: #1A202C;
+            }
+            QLineEdit:focus {
+                border: 1px solid #2B6CB0;
+            }
+            QPushButton#manualAddButton {
+                background-color: #EBF8FF;
+                border: 1px solid #90CDF4;
+                color: #1A365D;
+            }
+            QPushButton#manualAddButton:hover {
+                background-color: #BEE3F8;
+            }
+            """
+        )
 
         layout = QtWidgets.QVBoxLayout(self)
 
         description = QtWidgets.QLabel(
-            'Configure os parâmetros para gerar o PDF da Guia de Campo.', self
+            'Ative o marcador abaixo para começar a clicar no mapa e marcar os pontos. '
+            'Adicione Google Hybrid se precisar de uma camada de referência inicial.',
+            self
         )
         description.setWordWrap(True)
         layout.addWidget(description)
@@ -48,27 +152,79 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         )
         layout.addWidget(self.mark_on_canvas_checkbox)
 
+        manual_group = QtWidgets.QGroupBox('Adicionar coordenada manual (WGS84)', self)
+        manual_layout = QtWidgets.QGridLayout(manual_group)
+        manual_layout.setContentsMargins(10, 10, 10, 10)
+        manual_layout.setHorizontalSpacing(8)
+        manual_layout.setVerticalSpacing(8)
+
+        self.manual_latitude_input = QtWidgets.QLineEdit(self)
+        self.manual_latitude_input.setPlaceholderText('Latitude (ex.: -23.550520)')
+        manual_layout.addWidget(QtWidgets.QLabel('Latitude', self), 0, 0)
+        manual_layout.addWidget(self.manual_latitude_input, 1, 0)
+
+        self.manual_longitude_input = QtWidgets.QLineEdit(self)
+        self.manual_longitude_input.setPlaceholderText('Longitude (ex.: -46.633308)')
+        manual_layout.addWidget(QtWidgets.QLabel('Longitude', self), 0, 1)
+        manual_layout.addWidget(self.manual_longitude_input, 1, 1)
+
+        self.add_manual_coordinate_button = QtWidgets.QPushButton(
+            'Adicionar coordenada', self
+        )
+        self.add_manual_coordinate_button.setObjectName('manualAddButton')
+        manual_layout.addWidget(self.add_manual_coordinate_button, 2, 0, 1, 2)
+        layout.addWidget(manual_group)
+
         self.hybrid_layer_button = QtWidgets.QPushButton(
             'Adicionar Google Hybrid', self
         )
+        self.hybrid_layer_button.setObjectName('hybridButton')
         layout.addWidget(self.hybrid_layer_button)
 
         self.clear_marks_button = QtWidgets.QPushButton(
             'Limpar marcações', self
         )
+        self.clear_marks_button.setObjectName('clearButton')
         layout.addWidget(self.clear_marks_button)
+
+        self.remove_last_mark_button = QtWidgets.QPushButton(
+            'Remover última marcação', self
+        )
+        self.remove_last_mark_button.setObjectName('removeLastButton')
+        layout.addWidget(self.remove_last_mark_button)
 
         self.generate_pfd_button = QtWidgets.QPushButton(
             'Gerar PDF', self
         )
+        self.generate_pfd_button.setObjectName('generateButton')
         layout.addWidget(self.generate_pfd_button)
 
-        # Keep standard accept/reject actions for quick close/confirm.
-        self.button_box = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel,
-            parent=self,
-        )
-        self.button_box.accepted.connect(self.accept)
-        self.button_box.rejected.connect(self.reject)
+        footer_layout = QtWidgets.QHBoxLayout()
 
-        layout.addWidget(self.button_box)
+        logo_label = QtWidgets.QLabel(self)
+        logo_label.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        logo_pixmap = QtGui.QPixmap(':/plugins/guia_de_campo/icon.png')
+        if not logo_pixmap.isNull():
+            logo_label.setPixmap(
+                logo_pixmap.scaled(
+                    28,
+                    28,
+                    QtCore.Qt.KeepAspectRatio,
+                    QtCore.Qt.SmoothTransformation,
+                )
+            )
+        logo_label.setFixedSize(32, 32)
+        footer_layout.addWidget(logo_label)
+
+        project_note = QtWidgets.QLabel(self)
+        project_note.setText(
+            'Este é um projeto grátis e aberto, desenvolvido com o apoio da '
+            '<a href="https://farmanalytica.com.br">FARM Analytica</a>. '
+            'Entre em contato para soluções comerciais personalizadas.'
+        )
+        project_note.setTextFormat(QtCore.Qt.RichText)
+        project_note.setOpenExternalLinks(True)
+        project_note.setWordWrap(True)
+        project_note.setStyleSheet('color: #4A5568; font-size: 11px;')
+        footer_layout.addWidget(project_note, 1)
+        layout.addLayout(footer_layout)

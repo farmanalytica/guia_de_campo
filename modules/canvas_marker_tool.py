@@ -10,6 +10,7 @@ from qgis.core import (
     Qgis,
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
+    QgsPointXY,
     QgsProject,
     QgsTextAnnotation,
 )
@@ -65,10 +66,21 @@ class CanvasMarkerTool:
         source_crs = self.canvas.mapSettings().destinationCrs()
         transform = QgsCoordinateTransform(source_crs, self._wgs84, QgsProject.instance())
         wgs84_point = transform.transform(point)
-        self.coordinates.append((wgs84_point.x(), wgs84_point.y()))
+        self._store_coordinate_with_visuals(point, wgs84_point.x(), wgs84_point.y())
+
+    def add_wgs84_point(self, latitude, longitude):
+        """Add a point from manual WGS84 input and render visuals on canvas."""
+        destination_crs = self.canvas.mapSettings().destinationCrs()
+        transform = QgsCoordinateTransform(self._wgs84, destination_crs, QgsProject.instance())
+        map_point = transform.transform(QgsPointXY(longitude, latitude))
+        self._store_coordinate_with_visuals(map_point, longitude, latitude)
+
+    def _store_coordinate_with_visuals(self, map_point, longitude, latitude):
+        """Persist WGS84 tuple, draw marker/label, and show capture feedback."""
+        self.coordinates.append((longitude, latitude))
 
         marker = QgsVertexMarker(self.canvas)
-        marker.setCenter(point)
+        marker.setCenter(map_point)
         marker.setColor(QColor(220, 40, 40))
         marker.setIconType(QgsVertexMarker.ICON_X)
         marker.setIconSize(12)
@@ -77,7 +89,7 @@ class CanvasMarkerTool:
 
         label_text = str(len(self.coordinates))
         annotation = QgsTextAnnotation()
-        annotation.setMapPosition(point)
+        annotation.setMapPosition(map_point)
         annotation.setFrameOffsetFromReferencePointMm(QPointF(4, -5))
 
         # High-contrast badge so numbers stay readable over any basemap.
@@ -99,7 +111,7 @@ class CanvasMarkerTool:
         self.iface.messageBar().pushMessage(
             "Guia de Campo",
             "Ponto {} salvo em WGS84: ({:.6f}, {:.6f})".format(
-                len(self.coordinates), wgs84_point.x(), wgs84_point.y()
+                len(self.coordinates), longitude, latitude
             ),
             level=Qgis.Success,
             duration=2,
@@ -116,3 +128,20 @@ class CanvasMarkerTool:
         self._markers = []
         self._label_items = []
         self.coordinates = []
+
+    def remove_last(self):
+        """Remove only the most recently added mark and coordinate."""
+        if not self.coordinates:
+            return False
+
+        self.coordinates.pop()
+
+        if self._markers:
+            marker = self._markers.pop()
+            self.canvas.scene().removeItem(marker)
+
+        if self._label_items:
+            label_item = self._label_items.pop()
+            self.canvas.scene().removeItem(label_item)
+
+        return True

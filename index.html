@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Guia de Campo | Marque pontos e leve tudo no celular</title>
+	<meta name="description" content="Guia de Campo ajuda voce a marcar pontos no mapa e gerar um PDF pronto para uso em campo, com links diretos para abrir no celular.">
+	<link rel="icon" type="image/png" href="icon.png">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--bg: #f7f3e9;
+			--ink: #18342f;
+			--ink-soft: #355d56;
+			--card: #fffdf8;
+			--accent: #d96f38;
+			--accent-dark: #b65422;
+			--line: #e3d8c6;
+			--ok: #2b7f62;
+			--shadow: 0 14px 40px rgba(24, 52, 47, 0.12);
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		html {
+			scroll-behavior: smooth;
+		}
+
+		body {
+			font-family: "Sora", sans-serif;
+			color: var(--ink);
+			background:
+				radial-gradient(circle at 15% 0%, #f4d4b8 0%, transparent 35%),
+				radial-gradient(circle at 100% 20%, #b9d6cd 0%, transparent 30%),
+				var(--bg);
+			line-height: 1.6;
+		}
+
+		.container {
+			width: min(1100px, 92vw);
+			margin: 0 auto;
+		}
+
+		header {
+			position: sticky;
+			top: 0;
+			z-index: 20;
+			backdrop-filter: blur(10px);
+			border-bottom: 1px solid rgba(227, 216, 198, 0.7);
+			background: rgba(247, 243, 233, 0.86);
+		}
+
+		.nav {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 1rem;
+			padding: 0.85rem 0;
+		}
+
+		.brand {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.55rem;
+			font-family: "Fraunces", serif;
+			font-size: 1.25rem;
+			font-weight: 700;
+			letter-spacing: 0.2px;
+		}
+
+		.brand-logo {
+			width: 34px;
+			height: 34px;
+			border-radius: 10px;
+			object-fit: contain;
+			box-shadow: 0 6px 16px rgba(24, 52, 47, 0.2);
+			background: #fff;
+		}
+
+		.nav-links {
+			display: flex;
+			gap: 1.1rem;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: flex-end;
+		}
+
+		.nav-links a {
+			text-decoration: none;
+			color: var(--ink-soft);
+			font-weight: 600;
+			font-size: 0.95rem;
+		}
+
+		.hero {
+			padding: 5rem 0 3rem;
+			display: grid;
+			grid-template-columns: 1.2fr 1fr;
+			gap: 2rem;
+			align-items: center;
+		}
+
+		.tag {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.45rem;
+			background: #fff0e6;
+			border: 1px solid #f5ccb2;
+			color: #8d3f16;
+			padding: 0.35rem 0.7rem;
+			border-radius: 999px;
+			font-size: 0.82rem;
+			font-weight: 700;
+			margin-bottom: 1rem;
+		}
+
+		h1 {
+			font-family: "Fraunces", serif;
+			font-size: clamp(2rem, 5vw, 3.3rem);
+			line-height: 1.08;
+			margin-bottom: 1rem;
+			max-width: 18ch;
+		}
+
+		.hero p {
+			color: var(--ink-soft);
+			max-width: 48ch;
+			margin-bottom: 1.4rem;
+		}
+
+		.hero-note {
+			font-size: 0.92rem;
+			color: var(--ink-soft);
+		}
+
+		.preview {
+			background: linear-gradient(160deg, #ffffff, #f7efe2);
+			border: 1px solid var(--line);
+			border-radius: 20px;
+			box-shadow: var(--shadow);
+			padding: 1rem;
+			transform: rotate(1.5deg);
+		}
+
+		.preview-box {
+			border: 1px dashed #d8c7ab;
+			border-radius: 14px;
+			min-height: 320px;
+			padding: 1rem;
+			background:
+				linear-gradient(130deg, rgba(43, 127, 98, 0.12), rgba(217, 111, 56, 0.08)),
+				#fffdf9;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			gap: 0.8rem;
+		}
+
+		.mini-map {
+			border-radius: 10px;
+			height: 170px;
+			background:
+				linear-gradient(30deg, rgba(24, 52, 47, 0.05), rgba(24, 52, 47, 0)),
+				repeating-linear-gradient(
+					-45deg,
+					#efe3d0,
+					#efe3d0 10px,
+					#f7efe2 10px,
+					#f7efe2 20px
+				);
+			border: 1px solid #dfcfb6;
+			position: relative;
+			overflow: hidden;
+		}
+
+		.dot {
+			width: 14px;
+			height: 14px;
+			border-radius: 50%;
+			background: var(--accent);
+			border: 2px solid #fff;
+			position: absolute;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+		}
+
+		.dot:nth-child(1) { top: 25%; left: 18%; }
+		.dot:nth-child(2) { top: 58%; left: 42%; }
+		.dot:nth-child(3) { top: 34%; left: 72%; }
+
+		.mini-list {
+			display: grid;
+			gap: 0.4rem;
+			font-size: 0.88rem;
+			color: #33564f;
+		}
+
+		section {
+			padding: 4rem 0;
+		}
+
+		h2 {
+			font-family: "Fraunces", serif;
+			font-size: clamp(1.6rem, 3.5vw, 2.3rem);
+			margin-bottom: 0.6rem;
+		}
+
+		.section-lead {
+			max-width: 60ch;
+			color: var(--ink-soft);
+			margin-bottom: 1.4rem;
+		}
+
+		.grid {
+			display: grid;
+			gap: 1rem;
+		}
+
+		.benefits {
+			grid-template-columns: repeat(3, 1fr);
+		}
+
+		.card {
+			background: var(--card);
+			border: 1px solid var(--line);
+			border-radius: 16px;
+			padding: 1rem;
+			box-shadow: 0 8px 26px rgba(24, 52, 47, 0.08);
+		}
+
+		.card h3 {
+			margin-bottom: 0.4rem;
+			font-size: 1rem;
+		}
+
+		.card p {
+			color: var(--ink-soft);
+			font-size: 0.95rem;
+		}
+
+		.steps {
+			grid-template-columns: repeat(3, 1fr);
+			counter-reset: passo;
+		}
+
+		.step {
+			position: relative;
+			padding-top: 2.2rem;
+		}
+
+		.step::before {
+			counter-increment: passo;
+			content: "0" counter(passo);
+			position: absolute;
+			top: 0;
+			left: 0;
+			font-family: "Fraunces", serif;
+			font-size: 1.2rem;
+			color: var(--ok);
+			background: #e9f3ef;
+			border: 1px solid #cae3d9;
+			border-radius: 10px;
+			width: 40px;
+			height: 34px;
+			display: grid;
+			place-items: center;
+		}
+
+		.highlight {
+			background:
+				linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.9)),
+				radial-gradient(circle at right top, rgba(217, 111, 56, 0.25), transparent 50%);
+			border: 1px solid var(--line);
+			border-radius: 20px;
+			padding: 1.2rem;
+			display: grid;
+			gap: 0.8rem;
+		}
+
+		.check {
+			display: flex;
+			align-items: flex-start;
+			gap: 0.55rem;
+			color: var(--ink-soft);
+		}
+
+		.check span {
+			color: var(--ok);
+			font-weight: 700;
+		}
+
+		.about {
+			background: #fdf8ef;
+			border: 1px solid var(--line);
+			border-radius: 20px;
+			padding: 1.3rem;
+			box-shadow: 0 10px 28px rgba(24, 52, 47, 0.08);
+		}
+
+		.about p {
+			color: var(--ink-soft);
+			margin-bottom: 0.7rem;
+		}
+
+		.about p:last-child {
+			margin-bottom: 0;
+		}
+
+		.about a {
+			color: var(--accent-dark);
+			font-weight: 700;
+			text-underline-offset: 3px;
+		}
+
+		footer {
+			padding: 1rem 0 2rem;
+			color: var(--ink-soft);
+			font-size: 0.9rem;
+			text-align: center;
+		}
+
+		.footer-brand {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.5rem;
+			flex-wrap: wrap;
+		}
+
+		.footer-logo {
+			width: 28px;
+			height: 28px;
+			border-radius: 8px;
+			object-fit: contain;
+			background: #fff;
+			box-shadow: 0 4px 12px rgba(24, 52, 47, 0.15);
+		}
+
+		.reveal {
+			opacity: 0;
+			transform: translateY(14px);
+			transition: opacity 0.65s ease, transform 0.65s ease;
+		}
+
+		.reveal.show {
+			opacity: 1;
+			transform: none;
+		}
+
+		@media (max-width: 900px) {
+			.hero {
+				grid-template-columns: 1fr;
+				padding-top: 3.5rem;
+			}
+
+			.preview {
+				transform: none;
+			}
+
+			.benefits,
+			.steps {
+				grid-template-columns: 1fr;
+			}
+		}
+	</style>
+</head>
+<body id="top">
+	<header>
+		<div class="container nav">
+			<div class="brand">
+				<img class="brand-logo" src="icon.png" alt="Logo do Guia de Campo">
+				<span>Guia de Campo</span>
+			</div>
+			<nav class="nav-links" aria-label="Navegacao principal">
+				<a href="#beneficios">Beneficios</a>
+				<a href="#como-funciona">Como funciona</a>
+				<a href="#pdf">PDF no celular</a>
+			</nav>
+		</div>
+	</header>
+
+	<main>
+		<section class="container hero">
+			<div class="reveal show">
+				<div class="tag">Feito para quem trabalha em campo</div>
+				<h1>Marque pontos na tela do QGIS e, com um clique, gere um PDF para uso em campo</h1>
+				<p>
+					O Guia de Campo ajuda voce a registrar locais importantes durante a atividade e gerar um PDF pronto para consulta no celular,
+					com acesso rapido aos pontos quando estiver em deslocamento.
+				</p>
+				<p class="hero-note">Menos retrabalho, mais clareza e mais seguranca para sua equipe.</p>
+			</div>
+
+			<aside class="preview reveal" aria-label="Exemplo visual do uso">
+				<div class="preview-box">
+					<div class="mini-map" aria-hidden="true">
+						<div class="dot"></div>
+						<div class="dot"></div>
+						<div class="dot"></div>
+					</div>
+					<div class="mini-list">
+						<strong>Resumo rapido</strong>
+						<span>1. Ponto de entrada</span>
+						<span>2. Ponto de medicao</span>
+						<span>3. Ponto de apoio</span>
+					</div>
+				</div>
+			</aside>
+		</section>
+
+		<section id="beneficios" class="container reveal">
+			<h2>Por que usar no dia a dia</h2>
+			<p class="section-lead">
+				Pensado para atividades como inspecao de areas com indicio de problemas, orientacao de amostragens e organizacao de trabalhos de campo.
+			</p>
+
+			<div class="grid benefits">
+				<article class="card">
+					<h3>Inspecao de areas</h3>
+					<p>Marque locais com possivel problema e mantenha um registro claro para avaliacao e acompanhamento.</p>
+				</article>
+				<article class="card">
+					<h3>Orientacao de amostragens</h3>
+					<p>Use os pontos marcados para guiar coletas e tornar a amostragem mais organizada e objetiva.</p>
+				</article>
+				<article class="card">
+					<h3>Trabalhos de campo</h3>
+					<p>Compartilhe o PDF com a equipe e consulte os locais no celular durante deslocamentos e visitas tecnicas.</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="como-funciona" class="container reveal">
+			<h2>Como funciona</h2>
+			<p class="section-lead">Um fluxo direto, sem telas complexas e sem curva de aprendizado longa.</p>
+
+			<div class="grid steps">
+				<article class="card step">
+					<h3>Marque os pontos</h3>
+					<p>Durante o trabalho, clique nos locais importantes para criar suas marcacoes.</p>
+				</article>
+				<article class="card step">
+					<h3>Revise rapidamente</h3>
+					<p>Confira os pontos salvos e ajuste antes de finalizar seu material de campo.</p>
+				</article>
+				<article class="card step">
+					<h3>Gere e compartilhe</h3>
+					<p>Crie um PDF organizado e envie para quem precisa consultar os locais depois.</p>
+				</article>
+			</div>
+		</section>
+
+		<section id="pdf" class="container reveal">
+			<h2>PDF pensado para uso real em campo</h2>
+			<p class="section-lead">
+				O documento final foi desenhado para leitura rapida, com visual limpo e links que ajudam quando voce estiver em movimento.
+			</p>
+
+			<div class="highlight">
+				<div class="check"><span>✓</span>Mapa da area para contexto visual imediato.</div>
+				<div class="check"><span>✓</span>Lista numerada dos pontos para localizar cada item sem confusao.</div>
+				<div class="check"><span>✓</span>Links grandes, faceis de tocar no celular durante a rotina de campo.</div>
+			</div>
+		</section>
+
+		<section class="container reveal" aria-label="Sobre o projeto">
+			<h2>Sobre o projeto</h2>
+			<div class="about">
+				<p>
+					O Guia de Campo e um projeto de codigo aberto e gratis, criado para apoiar rotinas de campo com mais clareza e praticidade.
+				</p>
+				<p>
+					Desenvolvido por FARM Analytica, com foco em solucoes que aproximam tecnologia e trabalho de campo.
+				</p>
+				<p>
+					Conheca a empresa em
+					<a href="https://farmanalytica.com.br" target="_blank" rel="noopener noreferrer">farmanalytica.com.br</a>.
+				</p>
+			</div>
+		</section>
+	</main>
+
+	<footer>
+		<div class="container footer-brand">
+			<img class="footer-logo" src="icon.png" alt="Logo do Guia de Campo">
+			<span>Guia de Campo • Projeto aberto e gratuito • Apoiado pela FARM Analytica</span>
+		</div>
+	</footer>
+
+	<script>
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						entry.target.classList.add("show");
+					}
+				});
+			},
+			{ threshold: 0.15 }
+		);
+
+		document.querySelectorAll(".reveal").forEach((el) => observer.observe(el));
+	</script>
+</body>
+</html>

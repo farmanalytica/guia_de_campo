@@ -49,6 +49,16 @@ Plugin para captura de pontos no mapa, armazenamento de coordenadas em WGS84 e a
 
 - Botao `Limpar marcacoes` remove marcadores, labels e coordenadas salvas.
 
+### Inserir coordenadas manualmente
+
+1. Preencher `Latitude` e `Longitude` na secao `Adicionar coordenada manual (WGS84)`.
+2. Clicar em `Adicionar coordenada`.
+3. O plugin valida formato decimal e limites WGS84:
+	- latitude entre -90 e 90;
+	- longitude entre -180 e 180.
+4. Em caso valido, o ponto e adicionado com marcador e numeracao no mapa, igual aos pontos por clique.
+5. Em caso invalido, o ponto e bloqueado e uma mensagem de aviso e exibida.
+
 ### Gerar PDF
 
 - Botao `Gerar PDF` abre o seletor de arquivo para salvar o relatorio.
