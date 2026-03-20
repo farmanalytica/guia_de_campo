@@ -7,11 +7,14 @@ import os
 
 from .modules.canvas_marker_tool import CanvasMarkerTool
 from .modules.map_tools import hybrid_function
+from .modules.pdf.links import build_google_maps_directions_url
 from .modules.pdf import PdfReportComposer
 
 
 class GuiaDeCampoService:
     """Application service that orchestrates dialog actions and map tools."""
+
+    MAX_POINTS_PER_GOOGLE_ROUTE = 10
 
     def __init__(self, iface):
         """Initialize services that require access to QGIS interface."""
@@ -98,6 +101,76 @@ class GuiaDeCampoService:
                 level=Qgis.Critical,
                 duration=5,
             )
+
+    def _iter_route_batches(self, coordinates):
+        """Yield route chunks with overlap so segment continuity is preserved."""
+        max_points = self.MAX_POINTS_PER_GOOGLE_ROUTE
+        if len(coordinates) <= max_points:
+            yield coordinates
+            return
+
+        start = 0
+        while start < len(coordinates) - 1:
+            end = min(start + max_points, len(coordinates))
+            yield coordinates[start:end]
+            if end >= len(coordinates):
+                break
+            start = end - 1
+
+    def open_all_points_route(self):
+        """Open Google Maps directions using all captured points as ordered stops."""
+        coordinates = self.marker_tool.coordinates
+        if len(coordinates) < 2:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Adicione ao menos 2 pontos para abrir rota no Google Maps.',
+                level=Qgis.Warning,
+                duration=4,
+            )
+            return
+
+        route_urls = []
+        try:
+            for batch in self._iter_route_batches(coordinates):
+                route_urls.append(build_google_maps_directions_url(batch))
+        except Exception as exc:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Nao foi possivel montar a rota: {}'.format(exc),
+                level=Qgis.Critical,
+                duration=5,
+            )
+            return
+
+        opened_count = 0
+        for url in route_urls:
+            if QDesktopServices.openUrl(QUrl(url)):
+                opened_count += 1
+
+        if opened_count == 0:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Nao foi possivel abrir a rota no Google Maps.',
+                level=Qgis.Warning,
+                duration=4,
+            )
+            return
+
+        if len(route_urls) == 1:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Rota aberta no Google Maps com {} ponto(s).'.format(len(coordinates)),
+                level=Qgis.Success,
+                duration=4,
+            )
+            return
+
+        self.iface.messageBar().pushMessage(
+            'Guia de Campo',
+            'Rota grande dividida em {} trechos no Google Maps.'.format(opened_count),
+            level=Qgis.Info,
+            duration=5,
+        )
 
     def add_manual_coordinate(self, dialog):
         """Validate manual decimal WGS84 input and create a numbered map point."""

@@ -198,6 +198,9 @@ class GuiaDeCampo:
             self.dlg.hybrid_layer_button.clicked.connect(
                 self.service.add_hybrid_layer
             )
+            self.dlg.route_all_points_button.clicked.connect(
+                self.service.open_all_points_route
+            )
             self.dlg.clear_marks_button.clicked.connect(
                 self.service.clear_marks
             )

@@ -39,10 +39,10 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         self.setStyleSheet(
             """
             QPushButton {
-                min-height: 34px;
+                min-height: 28px;
                 border-radius: 6px;
                 border: 1px solid #CBD5E0;
-                padding: 6px 12px;
+                padding: 3px 10px;
                 font-weight: 600;
                 background-color: #F7FAFC;
                 color: #1A202C;
@@ -59,6 +59,14 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
                 color: #234E52;
             }
             QPushButton#hybridButton:hover {
+                background-color: #B2F5EA;
+            }
+            QPushButton#routeAllButton {
+                background-color: #E6FFFA;
+                border: 1px solid #4FD1C5;
+                color: #234E52;
+            }
+            QPushButton#routeAllButton:hover {
                 background-color: #B2F5EA;
             }
             QPushButton#clearButton {
@@ -89,10 +97,10 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
                 background-color: #1A365D;
             }
             QCheckBox {
-                spacing: 10px;
+                spacing: 6px;
                 color: #1A202C;
                 font-weight: 600;
-                padding: 4px 2px;
+                padding: 2px 2px;
             }
             QCheckBox::indicator {
                 width: 18px;
@@ -116,10 +124,10 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
                 image: url(:/images/themes/default/mIconSuccess.svg);
             }
             QLineEdit {
-                min-height: 32px;
+                min-height: 28px;
                 border: 1px solid #CBD5E0;
                 border-radius: 6px;
-                padding: 4px 8px;
+                padding: 3px 8px;
                 background: #FFFFFF;
                 color: #1A202C;
             }
@@ -138,6 +146,8 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         )
 
         layout = QtWidgets.QVBoxLayout(self)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(6)
 
         description = QtWidgets.QLabel(
             'Ative o marcador abaixo para começar a clicar no mapa e marcar os pontos. '
@@ -154,9 +164,9 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
 
         manual_group = QtWidgets.QGroupBox('Adicionar coordenada manual (WGS84)', self)
         manual_layout = QtWidgets.QGridLayout(manual_group)
-        manual_layout.setContentsMargins(10, 10, 10, 10)
-        manual_layout.setHorizontalSpacing(8)
-        manual_layout.setVerticalSpacing(8)
+        manual_layout.setContentsMargins(8, 8, 8, 8)
+        manual_layout.setHorizontalSpacing(6)
+        manual_layout.setVerticalSpacing(6)
 
         self.manual_latitude_input = QtWidgets.QLineEdit(self)
         self.manual_latitude_input.setPlaceholderText('Latitude (ex.: -23.550520)')
@@ -181,17 +191,27 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         self.hybrid_layer_button.setObjectName('hybridButton')
         layout.addWidget(self.hybrid_layer_button)
 
+        self.route_all_points_button = QtWidgets.QPushButton(
+            'Abrir rota no Google Maps', self
+        )
+        self.route_all_points_button.setObjectName('routeAllButton')
+        layout.addWidget(self.route_all_points_button)
+
         self.clear_marks_button = QtWidgets.QPushButton(
             'Limpar marcações', self
         )
         self.clear_marks_button.setObjectName('clearButton')
-        layout.addWidget(self.clear_marks_button)
 
         self.remove_last_mark_button = QtWidgets.QPushButton(
             'Remover última marcação', self
         )
         self.remove_last_mark_button.setObjectName('removeLastButton')
-        layout.addWidget(self.remove_last_mark_button)
+
+        marks_actions_layout = QtWidgets.QHBoxLayout()
+        marks_actions_layout.setSpacing(6)
+        marks_actions_layout.addWidget(self.clear_marks_button)
+        marks_actions_layout.addWidget(self.remove_last_mark_button)
+        layout.addLayout(marks_actions_layout)
 
         self.generate_pfd_button = QtWidgets.QPushButton(
             'Gerar PDF', self
