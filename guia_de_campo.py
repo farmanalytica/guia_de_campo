@@ -74,7 +74,7 @@ class GuiaDeCampo:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self._t('&Field Guide', '&Guia de Campo')
+        self.menu = self._t('&Field Guide', '&Field Guide')
 
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
@@ -182,7 +182,7 @@ class GuiaDeCampo:
         icon_path = ':/plugins/guia_de_campo/icon.png'
         self.add_action(
             icon_path,
-            text=self._t('Field Guide', 'Guia de Campo'),
+            text=self._t('Field Guide', 'Field Guide'),
             callback=self.run,
             parent=self.iface.mainWindow())
 

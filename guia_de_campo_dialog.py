@@ -26,6 +26,14 @@ from qgis.PyQt import QtCore, QtGui, QtWidgets
 import os
 
 
+def _qt_enum(scoped_name, member_name, legacy_name):
+    """Return a Qt5/Qt6 compatible enum member."""
+    scoped_enum = getattr(QtCore.Qt, scoped_name, None)
+    if scoped_enum is not None:
+        return getattr(scoped_enum, member_name)
+    return getattr(QtCore.Qt, legacy_name)
+
+
 class GuiaDeCampoDialog(QtWidgets.QDialog):
     """Main plugin dialog built in code (no .ui dependency)."""
 
@@ -34,9 +42,9 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         super(GuiaDeCampoDialog, self).__init__(parent)
         self.plugin_language = plugin_language
 
-        self.setWindowTitle(self._t('Field Guide', 'Guia de Campo'))
-        self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, True)
-        self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint, True)
+        self.setWindowTitle(self._t('Field Guide', 'Field Guide'))
+        self.setWindowFlag(_qt_enum('WindowType', 'WindowStaysOnTopHint', 'WindowStaysOnTopHint'), True)
+        self.setWindowFlag(_qt_enum('WindowType', 'WindowMinimizeButtonHint', 'WindowMinimizeButtonHint'), True)
 
         self.resize(420, 250)
         self.setStyleSheet(
@@ -268,7 +276,9 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         footer_layout = QtWidgets.QHBoxLayout()
 
         sponsor_logo_label = QtWidgets.QLabel(self)
-        sponsor_logo_label.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        align_left = _qt_enum('AlignmentFlag', 'AlignLeft', 'AlignLeft')
+        align_top = _qt_enum('AlignmentFlag', 'AlignTop', 'AlignTop')
+        sponsor_logo_label.setAlignment(align_left | align_top)
         sponsor_logo_path = os.path.join(os.path.dirname(__file__), 'farm_icon.png')
         sponsor_logo_pixmap = QtGui.QPixmap(sponsor_logo_path)
         if not sponsor_logo_pixmap.isNull():
@@ -276,8 +286,8 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
                 sponsor_logo_pixmap.scaled(
                     192,
                     56,
-                    QtCore.Qt.KeepAspectRatio,
-                    QtCore.Qt.SmoothTransformation,
+                    _qt_enum('AspectRatioMode', 'KeepAspectRatio', 'KeepAspectRatio'),
+                    _qt_enum('TransformationMode', 'SmoothTransformation', 'SmoothTransformation'),
                 )
             )
         sponsor_logo_label.setFixedSize(196, 60)
@@ -294,7 +304,7 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
                 'Entre em contato para solucoes comerciais personalizadas.'
             )
         )
-        project_note.setTextFormat(QtCore.Qt.RichText)
+        project_note.setTextFormat(_qt_enum('TextFormat', 'RichText', 'RichText'))
         project_note.setOpenExternalLinks(True)
         project_note.setWordWrap(True)
         project_note.setStyleSheet('color: #4A5568; font-size: 11px;')

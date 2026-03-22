@@ -17,6 +17,14 @@ from qgis.core import (
 from qgis.gui import QgsMapCanvasAnnotationItem, QgsMapToolEmitPoint, QgsVertexMarker
 
 
+def _qt_mouse_button(member_name, legacy_name):
+    """Return a Qt5/Qt6 compatible mouse button enum member."""
+    scoped_enum = getattr(Qt, 'MouseButton', None)
+    if scoped_enum is not None:
+        return getattr(scoped_enum, member_name)
+    return getattr(Qt, legacy_name)
+
+
 class CanvasMarkerTool:
     """Handle map-click point capture and visual feedback on canvas."""
 
@@ -50,7 +58,7 @@ class CanvasMarkerTool:
             self._previous_map_tool = self.canvas.mapTool()
         self.canvas.setMapTool(self._map_tool)
         self.iface.messageBar().pushMessage(
-            self._t("Field Guide", "Guia de Campo"),
+            self._t("Field Guide", "Field Guide"),
             self._t(
                 "Marking mode enabled. Click on the map to add points.",
                 "Modo de marcacao ativado. Clique no mapa para adicionar pontos.",
@@ -70,7 +78,7 @@ class CanvasMarkerTool:
 
     def _on_canvas_clicked(self, point, button):
         """Save click in WGS84, draw marker, and add an incrementing label."""
-        if button != Qt.LeftButton:
+        if button != _qt_mouse_button('LeftButton', 'LeftButton'):
             return
 
         source_crs = self.canvas.mapSettings().destinationCrs()
@@ -119,7 +127,7 @@ class CanvasMarkerTool:
         self._label_items.append(label_item)
 
         self.iface.messageBar().pushMessage(
-            self._t("Field Guide", "Guia de Campo"),
+            self._t("Field Guide", "Field Guide"),
             self._t(
                 "Point {} saved in WGS84: ({:.6f}, {:.6f})".format(
                     len(self.coordinates), longitude, latitude

@@ -3,8 +3,8 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Guia de Campo | Marque pontos e leve tudo no celular</title>
-	<meta name="description" content="Guia de Campo ajuda voce a marcar pontos no mapa, exportar/importar CSV, abrir rotas no Google Maps e gerar PDF com links por rota e por ponto para uso em campo.">
+	<title>Field Guide | Marque pontos e leve tudo para o celular</title>
+	<meta name="description" content="O Field Guide ajuda voce a marcar pontos no mapa, exportar e importar CSV, abrir rotas no Google Maps e gerar PDFs com links por rota e por ponto para uso em campo.">
 	<link rel="icon" type="image/png" href="icon.png">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -334,6 +334,52 @@
 			text-underline-offset: 3px;
 		}
 
+		.sponsor-block {
+			display: flex;
+			align-items: center;
+			gap: 0.9rem;
+			padding: 0.9rem 1rem;
+			margin-bottom: 1rem;
+			background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(233, 243, 239, 0.9));
+			border: 1px solid #d9e7e1;
+			border-radius: 16px;
+		}
+
+		.sponsor-logo {
+			width: 82px;
+			height: 82px;
+			border-radius: 18px;
+			object-fit: contain;
+			background: #fff;
+			padding: 0.5rem;
+			box-shadow: 0 10px 24px rgba(24, 52, 47, 0.12);
+			flex: 0 0 auto;
+		}
+
+		.sponsor-copy {
+			display: grid;
+			gap: 0.2rem;
+		}
+
+		.sponsor-label {
+			font-size: 0.78rem;
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			color: var(--ok);
+			font-weight: 700;
+		}
+
+		.sponsor-name {
+			font-family: "Fraunces", serif;
+			font-size: 1.15rem;
+		}
+
+		.sponsor-copy p {
+			margin: 0;
+			color: var(--ink-soft);
+			font-size: 0.94rem;
+		}
+
 		footer {
 			padding: 1rem 0 2rem;
 			color: var(--ink-soft);
@@ -393,6 +439,11 @@
 			.steps {
 				grid-template-columns: 1fr;
 			}
+
+			.sponsor-block {
+				flex-direction: column;
+				align-items: flex-start;
+			}
 		}
 	</style>
 </head>
@@ -400,8 +451,8 @@
 	<header>
 		<div class="container nav">
 			<div class="brand">
-				<img class="brand-logo" src="icon.png" alt="Guia de Campo logo" data-i18n-attr="alt:brand_logo_alt">
-				<span data-i18n="brand_name">Guia de Campo</span>
+				<img class="brand-logo" src="icon.png" alt="Field Guide logo" data-i18n-attr="alt:brand_logo_alt">
+				<span data-i18n="brand_name">Field Guide</span>
 			</div>
 			<div class="nav-right">
 				<nav class="nav-links" aria-label="Main navigation" data-i18n-attr="aria-label:nav_aria">
@@ -533,6 +584,14 @@
 		<section class="container reveal" aria-label="About the project" data-i18n-attr="aria-label:about_aria">
 			<h2 data-i18n="about_title">About the project</h2>
 			<div class="about">
+				<div class="sponsor-block">
+					<img class="sponsor-logo" src="farm_icon.png" alt="FARM Analytica logo" data-i18n-attr="alt:sponsor_logo_alt">
+					<div class="sponsor-copy">
+						<span class="sponsor-label" data-i18n="sponsor_label">Supported by</span>
+						<strong class="sponsor-name">FARM Analytica</strong>
+						<p data-i18n="sponsor_text">Technology and field intelligence working together to support practical operations.</p>
+					</div>
+				</div>
 				<p data-i18n="about_p1">
 					Field Guide is a free and open project created to support field routines with more clarity and practicality.
 				</p>
@@ -549,7 +608,8 @@
 
 	<footer>
 		<div class="container footer-brand">
-			<img class="footer-logo" src="icon.png" alt="Guia de Campo logo" data-i18n-attr="alt:brand_logo_alt">
+			<img class="footer-logo" src="icon.png" alt="Field Guide logo" data-i18n-attr="alt:brand_logo_alt">
+			<img class="footer-logo" src="farm_icon.png" alt="FARM Analytica logo" data-i18n-attr="alt:sponsor_logo_alt">
 			<span data-i18n="footer_text">Field Guide - Open and free project - Supported by FARM Analytica</span>
 		</div>
 	</footer>
@@ -557,10 +617,11 @@
 	<script>
 		const translations = {
 			pt: {
-				meta_title: "Guia de Campo | Marque pontos e leve tudo no celular",
-				meta_description: "Guia de Campo ajuda voce a marcar pontos no mapa, exportar/importar CSV, abrir rotas no Google Maps e gerar PDF com links por rota e por ponto para uso em campo.",
-				brand_logo_alt: "Logo do Guia de Campo",
-				brand_name: "Guia de Campo",
+				meta_title: "Field Guide | Marque pontos e leve tudo para o celular",
+				meta_description: "O Field Guide ajuda voce a marcar pontos no mapa, exportar e importar CSV, abrir rotas no Google Maps e gerar PDFs com links por rota e por ponto para uso em campo.",
+				brand_logo_alt: "Logo do Field Guide",
+				sponsor_logo_alt: "Logo da FARM Analytica",
+				brand_name: "Field Guide",
 				nav_aria: "Navegacao principal",
 				nav_benefits: "Beneficios",
 				nav_features: "Recursos",
@@ -569,61 +630,64 @@
 				lang_toggle_aria: "Alternar idioma",
 				hero_tag: "Feito para quem trabalha em campo",
 				hero_title: "Marque pontos no QGIS, abra rotas e gere um PDF pronto para o campo",
-				hero_description: "O Guia de Campo ajuda voce a registrar locais importantes durante a atividade, abrir rotas com paradas no Google Maps e gerar um PDF pronto para consulta no celular com links por rota e por ponto. Agora tambem permite exportar e importar coordenadas em CSV para reaproveitar pontos entre equipes e operacoes.",
-				hero_note: "Menos retrabalho, mais clareza e mais seguranca para sua equipe.",
+				hero_description: "O Field Guide ajuda voce a registrar locais importantes durante a atividade, abrir rotas com paradas no Google Maps e gerar um PDF pronto para consulta no celular, com links por rota e por ponto. Agora, tambem permite exportar e importar coordenadas em CSV para reaproveitar pontos entre equipes e operacoes.",
+				hero_note: "Menos retrabalho, mais clareza e mais seguranca para a sua equipe.",
 				preview_aria: "Exemplo visual do uso",
-				screenshot_alt: "Captura de tela do Guia de Campo",
+				screenshot_alt: "Captura de tela do Field Guide",
 				quick_summary: "Resumo rapido",
 				summary_1: "1. Ponto de entrada",
 				summary_2: "2. Ponto de medicao",
 				summary_3: "3. Ponto de apoio",
 				benefits_title: "Por que usar no dia a dia",
-				benefits_lead: "Pensado para atividades como inspecao de areas com indicio de problemas, orientacao de amostragens e organizacao de trabalhos de campo.",
+				benefits_lead: "Pensado para atividades como inspecao de areas com indicios de problemas, orientacao de amostragens e organizacao de trabalhos de campo.",
 				benefit_1_title: "Inspecao de areas",
-				benefit_1_text: "Marque locais com possivel problema e mantenha um registro claro para avaliacao e acompanhamento.",
+				benefit_1_text: "Marque locais com possiveis problemas e mantenha um registro claro para avaliacao e acompanhamento.",
 				benefit_2_title: "Orientacao de amostragens",
 				benefit_2_text: "Use os pontos marcados para guiar coletas e tornar a amostragem mais organizada e objetiva.",
 				benefit_3_title: "Trabalhos de campo",
 				benefit_3_text: "Compartilhe o PDF com a equipe e consulte os locais no celular durante deslocamentos e visitas tecnicas.",
 				features_title: "Recursos recentes",
 				features_lead: "Fluxo mais rapido para revisar pontos e navegar ate os locais em ordem.",
-				feature_1: "Remover ultima marcacao sem apagar todo o trabalho.",
+				feature_1: "Remova a ultima marcacao sem apagar todo o trabalho.",
 				feature_2: "Exportar pontos em CSV com ordem de captura e coordenadas WGS84.",
 				feature_3: "Importar CSV para reconstruir marcacoes no mapa em segundos.",
 				feature_4: "Abrir rota no Google Maps com todos os pontos como paradas.",
-				feature_5: "Divisao automatica em trechos quando a rota fica grande.",
-				feature_6: "Salvamento de PDF iniciando na pasta Downloads por padrao.",
+				feature_5: "Divisao automatica em trechos quando a rota fica muito grande.",
+				feature_6: "O salvamento do PDF comeca, por padrao, na pasta Downloads.",
 				how_title: "Como funciona",
-				how_lead: "Um fluxo direto, sem telas complexas e sem curva de aprendizado longa.",
+				how_lead: "Um fluxo direto, sem telas complexas e sem uma curva de aprendizado longa.",
 				step_1_title: "Marque ou importe pontos",
-				step_1_text: "Durante o trabalho, clique no mapa ou importe um CSV para carregar pontos ja planejados.",
+				step_1_text: "Durante o trabalho de campo, clique no mapa ou importe um CSV para carregar pontos ja planejados.",
 				step_2_title: "Ajuste e sincronize",
-				step_2_text: "Corrija marcacoes rapidamente e exporte CSV para compartilhar o mesmo roteiro com a equipe.",
+				step_2_text: "Corrija as marcacoes rapidamente e exporte um CSV para compartilhar o mesmo roteiro com a equipe.",
 				step_3_title: "Navegue e compartilhe",
 				step_3_text: "Abra a rota no Google Maps e gere um PDF organizado para consulta no celular.",
 				csv_title: "CSV para padronizar o trabalho de campo",
-				csv_lead: "Use arquivos CSV para levar e trazer pontos entre planejamento, execucao e revisao sem repetir cadastro manual.",
-				csv_1: "Exportacao com colunas ordem, longitude e latitude.",
-				csv_2: "Importacao com validacao de limites WGS84 (latitude -90..90, longitude -180..180).",
-				csv_3: "Leitura de decimal com ponto ou virgula para facilitar dados vindos de fontes diferentes.",
-				csv_4: "Resumo apos importacao indicando quantos pontos foram carregados e quantas linhas invalidas foram ignoradas.",
+				csv_lead: "Use arquivos CSV para levar e trazer pontos entre o planejamento, a execucao e a revisao, sem repetir o cadastro manual.",
+				csv_1: "Exportacao com as colunas ordem, longitude e latitude.",
+				csv_2: "Importacao com validacao dos limites WGS84 (latitude -90..90 e longitude -180..180).",
+				csv_3: "Leitura de valores decimais com ponto ou virgula, facilitando o uso de dados vindos de fontes diferentes.",
+				csv_4: "Resumo apos a importacao, indicando quantos pontos foram carregados e quantas linhas invalidas foram ignoradas.",
 				pdf_title: "PDF pensado para uso real em campo",
-				pdf_lead: "O documento final foi desenhado para leitura rapida, com visual limpo e links de rota e de pontos para uso em movimento.",
+				pdf_lead: "O documento final foi pensado para uma leitura rapida, com visual limpo e links de rota e de pontos para uso em movimento.",
 				pdf_1: "Mapa da area para contexto visual imediato.",
 				pdf_2: "Link de rota no Google Maps com paradas em ordem de captura.",
 				pdf_3: "Lista numerada dos pontos para localizar cada item sem confusao.",
 				pdf_4: "Links grandes por ponto, faceis de tocar no celular durante a rotina de campo.",
 				about_aria: "Sobre o projeto",
 				about_title: "Sobre o projeto",
-				about_p1: "O Guia de Campo e um projeto de codigo aberto e gratis, criado para apoiar rotinas de campo com mais clareza e praticidade.",
+				sponsor_label: "Apoio",
+				sponsor_text: "Tecnologia e inteligencia de campo trabalhando juntas para apoiar operacoes praticas no dia a dia.",
+				about_p1: "O Field Guide e um projeto aberto e gratuito, criado para apoiar rotinas de campo com mais clareza e praticidade.",
 				about_p2: "Desenvolvido por FARM Analytica, com foco em solucoes que aproximam tecnologia e trabalho de campo.",
 				about_p3_prefix: "Conheca a empresa em",
-				footer_text: "Guia de Campo - Projeto aberto e gratuito - Apoiado pela FARM Analytica"
+				footer_text: "Field Guide - Projeto aberto e gratuito, com apoio da FARM Analytica"
 			},
 			en: {
 				meta_title: "Field Guide | Mark points and take everything to mobile",
 				meta_description: "Field Guide helps you mark map points, export/import CSV, open Google Maps routes, and generate PDF files with route and point links for field usage.",
 				brand_logo_alt: "Field Guide logo",
+				sponsor_logo_alt: "FARM Analytica logo",
 				brand_name: "Field Guide",
 				nav_aria: "Main navigation",
 				nav_benefits: "Benefits",
@@ -679,6 +743,8 @@
 				pdf_4: "Large per-point links that are easy to tap on mobile.",
 				about_aria: "About the project",
 				about_title: "About the project",
+				sponsor_label: "Supported by",
+				sponsor_text: "Technology and field intelligence working together to support practical operations.",
 				about_p1: "Field Guide is a free and open project created to support field routines with more clarity and practicality.",
 				about_p2: "Developed by FARM Analytica with focus on solutions that connect technology and field work.",
 				about_p3_prefix: "Learn more at",

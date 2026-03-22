@@ -3,7 +3,7 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=GuiaDeCampo
+name=Field Guide
 qgisMinimumVersion=3.0
 description=Field PDF reports with georeferenced hyperlinks / Relatorios PDF de campo com hiperlinks georreferenciados.
 version=1.0
