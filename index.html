@@ -4,7 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Guia de Campo | Marque pontos e leve tudo no celular</title>
-	<meta name="description" content="Guia de Campo ajuda voce a marcar pontos no mapa, abrir rotas no Google Maps e gerar PDF com links por rota e por ponto para uso em campo.">
+	<meta name="description" content="Guia de Campo ajuda voce a marcar pontos no mapa, exportar/importar CSV, abrir rotas no Google Maps e gerar PDF com links por rota e por ponto para uso em campo.">
 	<link rel="icon" type="image/png" href="icon.png">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -392,7 +392,8 @@
 				<h1>Marque pontos no QGIS, abra rotas e gere um PDF pronto para o campo</h1>
 				<p>
 					O Guia de Campo ajuda voce a registrar locais importantes durante a atividade, abrir rotas com paradas no Google Maps
-					e gerar um PDF pronto para consulta no celular com links por rota e por ponto.
+					e gerar um PDF pronto para consulta no celular com links por rota e por ponto. Agora tambem permite exportar e importar
+					coordenadas em CSV para reaproveitar pontos entre equipes e operacoes.
 				</p>
 				<p class="hero-note">Menos retrabalho, mais clareza e mais seguranca para sua equipe.</p>
 			</div>
@@ -442,6 +443,8 @@
 
 			<div class="highlight">
 				<div class="check"><span>✓</span>Remover ultima marcacao sem apagar todo o trabalho.</div>
+				<div class="check"><span>✓</span>Exportar pontos em CSV com ordem de captura e coordenadas WGS84.</div>
+				<div class="check"><span>✓</span>Importar CSV para reconstruir marcacoes no mapa em segundos.</div>
 				<div class="check"><span>✓</span>Abrir rota no Google Maps com todos os pontos como paradas.</div>
 				<div class="check"><span>✓</span>Divisao automatica em trechos quando a rota fica grande.</div>
 				<div class="check"><span>✓</span>Salvamento de PDF iniciando na pasta Downloads por padrao.</div>
@@ -454,17 +457,31 @@
 
 			<div class="grid steps">
 				<article class="card step">
-					<h3>Marque os pontos</h3>
-					<p>Durante o trabalho, clique nos locais importantes para criar suas marcacoes.</p>
+					<h3>Marque ou importe pontos</h3>
+					<p>Durante o trabalho, clique no mapa ou importe um CSV para carregar pontos ja planejados.</p>
 				</article>
 				<article class="card step">
-					<h3>Ajuste sem perder tempo</h3>
-					<p>Use remover ultima marcacao para corrigir o ponto final ou limpar tudo quando necessario.</p>
+					<h3>Ajuste e sincronize</h3>
+					<p>Corrija marcacoes rapidamente e exporte CSV para compartilhar o mesmo roteiro com a equipe.</p>
 				</article>
 				<article class="card step">
 					<h3>Navegue e compartilhe</h3>
 					<p>Abra a rota no Google Maps e gere um PDF organizado para consulta no celular.</p>
 				</article>
+			</div>
+		</section>
+
+		<section id="csv" class="container reveal">
+			<h2>CSV para padronizar o trabalho de campo</h2>
+			<p class="section-lead">
+				Use arquivos CSV para levar e trazer pontos entre planejamento, execucao e revisao sem repetir cadastro manual.
+			</p>
+
+			<div class="highlight">
+				<div class="check"><span>✓</span>Exportacao com colunas <strong>ordem</strong>, <strong>longitude</strong> e <strong>latitude</strong>.</div>
+				<div class="check"><span>✓</span>Importacao com validacao de limites WGS84 (latitude -90..90, longitude -180..180).</div>
+				<div class="check"><span>✓</span>Leitura de decimal com ponto ou virgula para facilitar dados vindos de fontes diferentes.</div>
+				<div class="check"><span>✓</span>Resumo apos importacao indicando quantos pontos foram carregados e quantas linhas invalidas foram ignoradas.</div>
 			</div>
 		</section>
 

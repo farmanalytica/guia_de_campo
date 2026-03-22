@@ -3,6 +3,7 @@ from qgis.PyQt.QtCore import QStandardPaths, QUrl
 from qgis.PyQt.QtGui import QDesktopServices
 from qgis.PyQt.QtWidgets import QFileDialog
 
+import csv
 import os
 
 from .modules.canvas_marker_tool import CanvasMarkerTool
@@ -235,6 +236,129 @@ class GuiaDeCampoService:
         """Parse decimal coordinate text, accepting comma or dot separators."""
         normalized = value.replace(',', '.')
         return float(normalized)
+
+    def export_marks_csv(self):
+        """Export captured WGS84 points to a CSV file (longitude, latitude)."""
+        coordinates = self.marker_tool.coordinates
+        if not coordinates:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Nao ha pontos para exportar.',
+                level=Qgis.Warning,
+                duration=4,
+            )
+            return
+
+        download_dir = QStandardPaths.writableLocation(QStandardPaths.DownloadLocation)
+        default_csv_path = os.path.join(download_dir, 'guia_de_campo_pontos.csv') if download_dir else 'guia_de_campo_pontos.csv'
+
+        output_path, _ = QFileDialog.getSaveFileName(
+            None,
+            'Salvar pontos em CSV',
+            default_csv_path,
+            'CSV Files (*.csv)',
+        )
+        if not output_path:
+            return
+
+        try:
+            with open(output_path, mode='w', newline='', encoding='utf-8') as csv_file:
+                writer = csv.writer(csv_file)
+                writer.writerow(['ordem', 'longitude', 'latitude'])
+                for index, (longitude, latitude) in enumerate(coordinates, start=1):
+                    writer.writerow([index, '{:.8f}'.format(longitude), '{:.8f}'.format(latitude)])
+        except Exception as exc:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Erro ao exportar CSV: {}'.format(exc),
+                level=Qgis.Critical,
+                duration=6,
+            )
+            return
+
+        self.iface.messageBar().pushMessage(
+            'Guia de Campo',
+            'CSV exportado com sucesso: {}'.format(output_path),
+            level=Qgis.Success,
+            duration=5,
+        )
+
+    def import_marks_csv(self):
+        """Import WGS84 points from CSV and draw them on the map canvas."""
+        input_path, _ = QFileDialog.getOpenFileName(
+            None,
+            'Importar pontos CSV',
+            '',
+            'CSV Files (*.csv);;All Files (*)',
+        )
+        if not input_path:
+            return
+
+        imported_count = 0
+        skipped_count = 0
+
+        try:
+            with open(input_path, mode='r', newline='', encoding='utf-8-sig') as csv_file:
+                reader = csv.DictReader(csv_file)
+
+                if not reader.fieldnames:
+                    raise ValueError('Arquivo CSV sem cabecalho.')
+
+                fieldnames = [name.strip().lower() for name in reader.fieldnames]
+                has_required_columns = 'longitude' in fieldnames and 'latitude' in fieldnames
+                if not has_required_columns:
+                    raise ValueError('Cabecalho deve conter colunas longitude e latitude.')
+
+                longitude_key = reader.fieldnames[fieldnames.index('longitude')]
+                latitude_key = reader.fieldnames[fieldnames.index('latitude')]
+
+                for row in reader:
+                    try:
+                        longitude = self._parse_decimal(str(row.get(longitude_key, '')).strip())
+                        latitude = self._parse_decimal(str(row.get(latitude_key, '')).strip())
+                    except (TypeError, ValueError):
+                        skipped_count += 1
+                        continue
+
+                    if latitude < -90 or latitude > 90 or longitude < -180 or longitude > 180:
+                        skipped_count += 1
+                        continue
+
+                    self.marker_tool.add_wgs84_point(latitude, longitude)
+                    imported_count += 1
+        except Exception as exc:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Erro ao importar CSV: {}'.format(exc),
+                level=Qgis.Critical,
+                duration=6,
+            )
+            return
+
+        if imported_count == 0:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                'Nenhum ponto valido encontrado no CSV.',
+                level=Qgis.Warning,
+                duration=5,
+            )
+            return
+
+        if skipped_count > 0:
+            self.iface.messageBar().pushMessage(
+                'Guia de Campo',
+                '{} ponto(s) importado(s); {} linha(s) ignorada(s).'.format(imported_count, skipped_count),
+                level=Qgis.Info,
+                duration=6,
+            )
+            return
+
+        self.iface.messageBar().pushMessage(
+            'Guia de Campo',
+            '{} ponto(s) importado(s) com sucesso.'.format(imported_count),
+            level=Qgis.Success,
+            duration=5,
+        )
 
     def generate_pfd(self):
         """Generate PDF report with current canvas screenshot and map links."""

@@ -23,6 +23,7 @@
 """
 
 from qgis.PyQt import QtCore, QtGui, QtWidgets
+import os
 
 
 class GuiaDeCampoDialog(QtWidgets.QDialog):
@@ -84,6 +85,22 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
             }
             QPushButton#removeLastButton:hover {
                 background-color: #FAF089;
+            }
+            QPushButton#csvExportButton {
+                background-color: #F0FFF4;
+                border: 1px solid #9AE6B4;
+                color: #22543D;
+            }
+            QPushButton#csvExportButton:hover {
+                background-color: #C6F6D5;
+            }
+            QPushButton#csvImportButton {
+                background-color: #FFFAF0;
+                border: 1px solid #F6AD55;
+                color: #744210;
+            }
+            QPushButton#csvImportButton:hover {
+                background-color: #FEEBC8;
             }
             QPushButton#generateButton {
                 background-color: #2B6CB0;
@@ -213,6 +230,22 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         marks_actions_layout.addWidget(self.remove_last_mark_button)
         layout.addLayout(marks_actions_layout)
 
+        self.export_csv_button = QtWidgets.QPushButton(
+            'Exportar pontos CSV', self
+        )
+        self.export_csv_button.setObjectName('csvExportButton')
+
+        self.import_csv_button = QtWidgets.QPushButton(
+            'Importar pontos CSV', self
+        )
+        self.import_csv_button.setObjectName('csvImportButton')
+
+        csv_actions_layout = QtWidgets.QHBoxLayout()
+        csv_actions_layout.setSpacing(6)
+        csv_actions_layout.addWidget(self.export_csv_button)
+        csv_actions_layout.addWidget(self.import_csv_button)
+        layout.addLayout(csv_actions_layout)
+
         self.generate_pfd_button = QtWidgets.QPushButton(
             'Gerar PDF', self
         )
@@ -221,20 +254,21 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
 
         footer_layout = QtWidgets.QHBoxLayout()
 
-        logo_label = QtWidgets.QLabel(self)
-        logo_label.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
-        logo_pixmap = QtGui.QPixmap(':/plugins/guia_de_campo/icon.png')
-        if not logo_pixmap.isNull():
-            logo_label.setPixmap(
-                logo_pixmap.scaled(
-                    28,
-                    28,
+        sponsor_logo_label = QtWidgets.QLabel(self)
+        sponsor_logo_label.setAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        sponsor_logo_path = os.path.join(os.path.dirname(__file__), 'farm_icon.png')
+        sponsor_logo_pixmap = QtGui.QPixmap(sponsor_logo_path)
+        if not sponsor_logo_pixmap.isNull():
+            sponsor_logo_label.setPixmap(
+                sponsor_logo_pixmap.scaled(
+                    192,
+                    56,
                     QtCore.Qt.KeepAspectRatio,
                     QtCore.Qt.SmoothTransformation,
                 )
             )
-        logo_label.setFixedSize(32, 32)
-        footer_layout.addWidget(logo_label)
+        sponsor_logo_label.setFixedSize(196, 60)
+        footer_layout.addWidget(sponsor_logo_label)
 
         project_note = QtWidgets.QLabel(self)
         project_note.setText(

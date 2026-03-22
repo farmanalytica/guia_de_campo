@@ -64,6 +64,27 @@ Plugin para captura de pontos no mapa, armazenamento de coordenadas em WGS84 e a
 4. Em caso valido, o ponto e adicionado com marcador e numeracao no mapa, igual aos pontos por clique.
 5. Em caso invalido, o ponto e bloqueado e uma mensagem de aviso e exibida.
 
+### Exportar pontos para CSV
+
+- Botao `Exportar pontos CSV` salva os pontos atuais em arquivo `.csv`.
+- O caminho inicial de salvamento abre na pasta Downloads do sistema (quando disponivel).
+- Estrutura exportada:
+	- `ordem`: sequencia de captura do ponto;
+	- `longitude`: coordenada WGS84 em decimal;
+	- `latitude`: coordenada WGS84 em decimal.
+- O export so e realizado quando ha ao menos 1 ponto marcado.
+
+### Importar pontos de CSV
+
+- Botao `Importar pontos CSV` permite carregar pontos de um arquivo `.csv`.
+- O CSV deve conter cabecalho com as colunas `longitude` e `latitude`.
+- O plugin aceita decimal com `.` ou `,`.
+- Validacoes aplicadas na importacao:
+	- latitude entre -90 e 90;
+	- longitude entre -180 e 180.
+- Linhas invalidas sao ignoradas e o plugin exibe resumo com pontos importados e linhas ignoradas.
+- Pontos validos importados sao desenhados no mapa com numeracao sequencial, igual aos pontos capturados por clique.
+
 ### Gerar PDF
 
 - Botao `Gerar PDF` abre o seletor de arquivo para salvar o relatorio.
@@ -110,5 +131,5 @@ Plugin para captura de pontos no mapa, armazenamento de coordenadas em WGS84 e a
 
 ## Suggested Next Improvements
 
-- Persistir coordenadas em arquivo (CSV/GeoJSON) alem do PDF.
+- Suportar outros formatos de intercambio alem do CSV (ex.: GeoJSON).
 - Adicionar testes basicos para funcoes de transformacao e limpeza de estado.

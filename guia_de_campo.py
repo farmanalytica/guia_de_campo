@@ -216,6 +216,12 @@ class GuiaDeCampo:
             self.dlg.add_manual_coordinate_button.clicked.connect(
                 lambda: self.service.add_manual_coordinate(self.dlg)
             )
+            self.dlg.export_csv_button.clicked.connect(
+                self.service.export_marks_csv
+            )
+            self.dlg.import_csv_button.clicked.connect(
+                self.service.import_marks_csv
+            )
             self.dlg.finished.connect(
                 lambda _: self.dlg.mark_on_canvas_checkbox.setChecked(False)
             )
