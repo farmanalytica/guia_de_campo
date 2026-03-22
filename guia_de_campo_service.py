@@ -17,11 +17,18 @@ class GuiaDeCampoService:
 
     MAX_POINTS_PER_GOOGLE_ROUTE = 10
 
-    def __init__(self, iface):
+    def __init__(self, iface, plugin_language='en'):
         """Initialize services that require access to QGIS interface."""
         self.iface = iface
-        self.marker_tool = CanvasMarkerTool(self.iface)
-        self.pdf_composer = PdfReportComposer(self.iface)
+        self.plugin_language = plugin_language
+        self.marker_tool = CanvasMarkerTool(self.iface, self.plugin_language)
+        self.pdf_composer = PdfReportComposer(self.iface, self.plugin_language)
+
+    def _t(self, english_text, portuguese_text):
+        """Return pt-BR text only when plugin language is Portuguese."""
+        if self.plugin_language == 'pt_BR':
+            return portuguese_text
+        return english_text
 
     def toggle_mark_mode(self, enabled):
         """Enable or disable interactive point capture from the checkbox."""
@@ -40,16 +47,22 @@ class GuiaDeCampoService:
         n = len(self.marker_tool.coordinates)
         if button_name == 'ok':
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Ação confirmada. {} ponto(s) capturado(s).'.format(n),
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Action confirmed. {} point(s) captured.'.format(n),
+                    'Acao confirmada. {} ponto(s) capturado(s).'.format(n),
+                ),
                 level=Qgis.Info,
                 duration=3,
             )
             return
 
         self.iface.messageBar().pushMessage(
-            'Guia de Campo',
-            'Ação cancelada. {} ponto(s) capturado(s).'.format(n),
+            self._t('Field Guide', 'Guia de Campo'),
+            self._t(
+                'Action canceled. {} point(s) captured.'.format(n),
+                'Acao cancelada. {} ponto(s) capturado(s).'.format(n),
+            ),
             level=Qgis.Warning,
             duration=3,
         )
@@ -59,8 +72,11 @@ class GuiaDeCampoService:
         n = len(self.marker_tool.coordinates)
         self.marker_tool.clear()
         self.iface.messageBar().pushMessage(
-            'Guia de Campo',
-            '{} marcação(ões) removida(s).'.format(n),
+            self._t('Field Guide', 'Guia de Campo'),
+            self._t(
+                '{} mark(s) removed.'.format(n),
+                '{} marcacao(oes) removida(s).'.format(n),
+            ),
             level=Qgis.Info,
             duration=3,
         )
@@ -70,8 +86,8 @@ class GuiaDeCampoService:
         removed = self.marker_tool.remove_last()
         if not removed:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Nenhuma marcação para remover.',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t('No marks to remove.', 'Nenhuma marcacao para remover.'),
                 level=Qgis.Warning,
                 duration=3,
             )
@@ -79,8 +95,11 @@ class GuiaDeCampoService:
 
         n = len(self.marker_tool.coordinates)
         self.iface.messageBar().pushMessage(
-            'Guia de Campo',
-            'Última marcação removida. {} ponto(s) restante(s).'.format(n),
+            self._t('Field Guide', 'Guia de Campo'),
+            self._t(
+                'Last mark removed. {} point(s) remaining.'.format(n),
+                'Ultima marcacao removida. {} ponto(s) restante(s).'.format(n),
+            ),
             level=Qgis.Info,
             duration=3,
         )
@@ -90,15 +109,21 @@ class GuiaDeCampoService:
         try:
             hybrid_function()
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Comando de camada Google Hybrid executado.',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Google Hybrid layer command executed.',
+                    'Comando de camada Google Hybrid executado.',
+                ),
                 level=Qgis.Info,
                 duration=3,
             )
-        except Exception as exc:
+        except Exception:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Erro ao adicionar Google Hybrid: {}'.format(exc),
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Error adding Google Hybrid.',
+                    'Erro ao adicionar Google Hybrid.',
+                ),
                 level=Qgis.Critical,
                 duration=5,
             )
@@ -123,8 +148,11 @@ class GuiaDeCampoService:
         coordinates = self.marker_tool.coordinates
         if len(coordinates) < 2:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Adicione ao menos 2 pontos para abrir rota no Google Maps.',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Add at least 2 points to open a route in Google Maps.',
+                    'Adicione ao menos 2 pontos para abrir rota no Google Maps.',
+                ),
                 level=Qgis.Warning,
                 duration=4,
             )
@@ -134,10 +162,13 @@ class GuiaDeCampoService:
         try:
             for batch in self._iter_route_batches(coordinates):
                 route_urls.append(build_google_maps_directions_url(batch))
-        except Exception as exc:
+        except Exception:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Nao foi possivel montar a rota: {}'.format(exc),
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Could not build route.',
+                    'Nao foi possivel montar a rota.',
+                ),
                 level=Qgis.Critical,
                 duration=5,
             )
@@ -150,8 +181,11 @@ class GuiaDeCampoService:
 
         if opened_count == 0:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Nao foi possivel abrir a rota no Google Maps.',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Could not open route in Google Maps.',
+                    'Nao foi possivel abrir a rota no Google Maps.',
+                ),
                 level=Qgis.Warning,
                 duration=4,
             )
@@ -159,16 +193,22 @@ class GuiaDeCampoService:
 
         if len(route_urls) == 1:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Rota aberta no Google Maps com {} ponto(s).'.format(len(coordinates)),
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Route opened in Google Maps with {} point(s).'.format(len(coordinates)),
+                    'Rota aberta no Google Maps com {} ponto(s).'.format(len(coordinates)),
+                ),
                 level=Qgis.Success,
                 duration=4,
             )
             return
 
         self.iface.messageBar().pushMessage(
-            'Guia de Campo',
-            'Rota grande dividida em {} trechos no Google Maps.'.format(opened_count),
+            self._t('Field Guide', 'Guia de Campo'),
+            self._t(
+                'Large route split into {} segments in Google Maps.'.format(opened_count),
+                'Rota grande dividida em {} trechos no Google Maps.'.format(opened_count),
+            ),
             level=Qgis.Info,
             duration=5,
         )
@@ -180,8 +220,11 @@ class GuiaDeCampoService:
 
         if not latitude_text or not longitude_text:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Preencha latitude e longitude para adicionar a coordenada manual.',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Fill latitude and longitude to add a manual coordinate.',
+                    'Preencha latitude e longitude para adicionar a coordenada manual.',
+                ),
                 level=Qgis.Warning,
                 duration=4,
             )
@@ -192,8 +235,11 @@ class GuiaDeCampoService:
             longitude = self._parse_decimal(longitude_text)
         except ValueError:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Coordenadas inválidas. Use formato decimal (ex.: -23.550520).',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Invalid coordinates. Use decimal format (e.g.: -23.550520).',
+                    'Coordenadas invalidas. Use formato decimal (ex.: -23.550520).',
+                ),
                 level=Qgis.Warning,
                 duration=4,
             )
@@ -201,8 +247,11 @@ class GuiaDeCampoService:
 
         if latitude < -90 or latitude > 90:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Latitude fora do intervalo permitido (-90 a 90).',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Latitude is out of allowed range (-90 to 90).',
+                    'Latitude fora do intervalo permitido (-90 a 90).',
+                ),
                 level=Qgis.Warning,
                 duration=4,
             )
@@ -210,8 +259,11 @@ class GuiaDeCampoService:
 
         if longitude < -180 or longitude > 180:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Longitude fora do intervalo permitido (-180 a 180).',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Longitude is out of allowed range (-180 to 180).',
+                    'Longitude fora do intervalo permitido (-180 a 180).',
+                ),
                 level=Qgis.Warning,
                 duration=4,
             )
@@ -219,10 +271,13 @@ class GuiaDeCampoService:
 
         try:
             self.marker_tool.add_wgs84_point(latitude, longitude)
-        except Exception as exc:
+        except Exception:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Erro ao adicionar coordenada manual: {}'.format(exc),
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Error adding manual coordinate.',
+                    'Erro ao adicionar coordenada manual.',
+                ),
                 level=Qgis.Critical,
                 duration=5,
             )
@@ -242,19 +297,19 @@ class GuiaDeCampoService:
         coordinates = self.marker_tool.coordinates
         if not coordinates:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Nao ha pontos para exportar.',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t('There are no points to export.', 'Nao ha pontos para exportar.'),
                 level=Qgis.Warning,
                 duration=4,
             )
             return
 
         download_dir = QStandardPaths.writableLocation(QStandardPaths.DownloadLocation)
-        default_csv_path = os.path.join(download_dir, 'guia_de_campo_pontos.csv') if download_dir else 'guia_de_campo_pontos.csv'
+        default_csv_path = os.path.join(download_dir, 'field_guide_points.csv') if download_dir else 'field_guide_points.csv'
 
         output_path, _ = QFileDialog.getSaveFileName(
             None,
-            'Salvar pontos em CSV',
+            self._t('Save points to CSV', 'Salvar pontos em CSV'),
             default_csv_path,
             'CSV Files (*.csv)',
         )
@@ -264,21 +319,25 @@ class GuiaDeCampoService:
         try:
             with open(output_path, mode='w', newline='', encoding='utf-8') as csv_file:
                 writer = csv.writer(csv_file)
-                writer.writerow(['ordem', 'longitude', 'latitude'])
+                writer.writerow([
+                    self._t('order', 'ordem'),
+                    self._t('longitude', 'longitude'),
+                    self._t('latitude', 'latitude'),
+                ])
                 for index, (longitude, latitude) in enumerate(coordinates, start=1):
                     writer.writerow([index, '{:.8f}'.format(longitude), '{:.8f}'.format(latitude)])
-        except Exception as exc:
+        except Exception:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Erro ao exportar CSV: {}'.format(exc),
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t('Error exporting CSV.', 'Erro ao exportar CSV.'),
                 level=Qgis.Critical,
                 duration=6,
             )
             return
 
         self.iface.messageBar().pushMessage(
-            'Guia de Campo',
-            'CSV exportado com sucesso: {}'.format(output_path),
+            self._t('Field Guide', 'Guia de Campo'),
+            self._t('CSV exported successfully: {}'.format(output_path), 'CSV exportado com sucesso: {}'.format(output_path)),
             level=Qgis.Success,
             duration=5,
         )
@@ -287,7 +346,7 @@ class GuiaDeCampoService:
         """Import WGS84 points from CSV and draw them on the map canvas."""
         input_path, _ = QFileDialog.getOpenFileName(
             None,
-            'Importar pontos CSV',
+            self._t('Import points CSV', 'Importar pontos CSV'),
             '',
             'CSV Files (*.csv);;All Files (*)',
         )
@@ -302,12 +361,17 @@ class GuiaDeCampoService:
                 reader = csv.DictReader(csv_file)
 
                 if not reader.fieldnames:
-                    raise ValueError('Arquivo CSV sem cabecalho.')
+                    raise ValueError(self._t('CSV file has no header.', 'Arquivo CSV sem cabecalho.'))
 
                 fieldnames = [name.strip().lower() for name in reader.fieldnames]
                 has_required_columns = 'longitude' in fieldnames and 'latitude' in fieldnames
                 if not has_required_columns:
-                    raise ValueError('Cabecalho deve conter colunas longitude e latitude.')
+                    raise ValueError(
+                        self._t(
+                            'Header must contain longitude and latitude columns.',
+                            'Cabecalho deve conter colunas longitude e latitude.',
+                        )
+                    )
 
                 longitude_key = reader.fieldnames[fieldnames.index('longitude')]
                 latitude_key = reader.fieldnames[fieldnames.index('latitude')]
@@ -326,10 +390,10 @@ class GuiaDeCampoService:
 
                     self.marker_tool.add_wgs84_point(latitude, longitude)
                     imported_count += 1
-        except Exception as exc:
+        except Exception:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Erro ao importar CSV: {}'.format(exc),
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t('Error importing CSV.', 'Erro ao importar CSV.'),
                 level=Qgis.Critical,
                 duration=6,
             )
@@ -337,8 +401,8 @@ class GuiaDeCampoService:
 
         if imported_count == 0:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Nenhum ponto valido encontrado no CSV.',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t('No valid points found in CSV.', 'Nenhum ponto valido encontrado no CSV.'),
                 level=Qgis.Warning,
                 duration=5,
             )
@@ -346,16 +410,22 @@ class GuiaDeCampoService:
 
         if skipped_count > 0:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                '{} ponto(s) importado(s); {} linha(s) ignorada(s).'.format(imported_count, skipped_count),
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    '{} point(s) imported; {} row(s) skipped.'.format(imported_count, skipped_count),
+                    '{} ponto(s) importado(s); {} linha(s) ignorada(s).'.format(imported_count, skipped_count),
+                ),
                 level=Qgis.Info,
                 duration=6,
             )
             return
 
         self.iface.messageBar().pushMessage(
-            'Guia de Campo',
-            '{} ponto(s) importado(s) com sucesso.'.format(imported_count),
+            self._t('Field Guide', 'Guia de Campo'),
+            self._t(
+                '{} point(s) imported successfully.'.format(imported_count),
+                '{} ponto(s) importado(s) com sucesso.'.format(imported_count),
+            ),
             level=Qgis.Success,
             duration=5,
         )
@@ -365,19 +435,22 @@ class GuiaDeCampoService:
         coordinates = self.marker_tool.coordinates
         if not coordinates:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Nenhum ponto marcado. Adicione pontos no mapa antes de gerar o PDF.',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'No points marked. Add map points before generating the PDF.',
+                    'Nenhum ponto marcado. Adicione pontos no mapa antes de gerar o PDF.',
+                ),
                 level=Qgis.Warning,
                 duration=4,
             )
             return
 
         download_dir = QStandardPaths.writableLocation(QStandardPaths.DownloadLocation)
-        default_pdf_path = os.path.join(download_dir, 'guia_de_campo.pdf') if download_dir else 'guia_de_campo.pdf'
+        default_pdf_path = os.path.join(download_dir, 'field_guide.pdf') if download_dir else 'field_guide.pdf'
 
         output_path, _ = QFileDialog.getSaveFileName(
             None,
-            'Salvar PDF da Guia de Campo',
+            self._t('Save Field Guide PDF', 'Salvar PDF da Guia de Campo'),
             default_pdf_path,
             'PDF Files (*.pdf)',
         )
@@ -386,18 +459,18 @@ class GuiaDeCampoService:
 
         try:
             final_path = self.pdf_composer.generate(coordinates, output_path)
-        except Exception as exc:
+        except Exception:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'Erro ao gerar PDF: {}'.format(exc),
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t('Error generating PDF.', 'Erro ao gerar PDF.'),
                 level=Qgis.Critical,
                 duration=6,
             )
             return
 
         self.iface.messageBar().pushMessage(
-            'Guia de Campo',
-            'PDF gerado com sucesso: {}'.format(final_path),
+            self._t('Field Guide', 'Guia de Campo'),
+            self._t('PDF generated successfully: {}'.format(final_path), 'PDF gerado com sucesso: {}'.format(final_path)),
             level=Qgis.Success,
             duration=5,
         )
@@ -405,8 +478,11 @@ class GuiaDeCampoService:
         opened = QDesktopServices.openUrl(QUrl.fromLocalFile(final_path))
         if not opened:
             self.iface.messageBar().pushMessage(
-                'Guia de Campo',
-                'PDF salvo, mas nao foi possivel abrir automaticamente.',
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'PDF saved, but could not be opened automatically.',
+                    'PDF salvo, mas nao foi possivel abrir automaticamente.',
+                ),
                 level=Qgis.Warning,
                 duration=4,
             )

@@ -5,11 +5,17 @@ from datetime import datetime
 
 def build_points_html(mark_items):
     """Build styled HTML for clickable point list pages (starts on page 2)."""
-    return build_points_html_with_routes(mark_items, route_items=[])
+    return build_points_html_with_routes(mark_items, route_items=[], plugin_language='en')
 
 
-def build_points_html_with_routes(mark_items, route_items):
+def build_points_html_with_routes(mark_items, route_items, plugin_language='en'):
     """Build styled HTML with optional all-stops route link cards."""
+
+    def t(english_text, portuguese_text):
+        if plugin_language == 'pt_BR':
+            return portuguese_text
+        return english_text
+
     generated_at = datetime.now().strftime("%d/%m/%Y %H:%M")
 
     items_html = []
@@ -18,16 +24,18 @@ def build_points_html_with_routes(mark_items, route_items):
             """
             <li class=\"mark-item\">
                 <a href=\"{url}\" class=\"mark-link\">
-                    <span class=\"title\">Ponto {index}</span>
+                    <span class=\"title\">{point_label} {index}</span>
                     <span class=\"coords\">Lat: {lat} | Lon: {lon}</span>
-                <span class=\"action\">Abrir no Google Maps</span>
+                    <span class=\"action\">{open_point_action}</span>
                 </a>
             </li>
             """.format(
+                point_label=t("Point", "Ponto"),
                 index=item["index"],
                 lat=item["latitude"],
                 lon=item["longitude"],
                 url=item["url"],
+                open_point_action=t("Open in Google Maps", "Abrir no Google Maps"),
             )
         )
 
@@ -37,12 +45,17 @@ def build_points_html_with_routes(mark_items, route_items):
             """
             <li class=\"route-item\">
               <a href=\"{url}\" class=\"route-link\">
-                <span class=\"title\">Rota {index}</span>
-                <span class=\"coords\">Pontos {start} a {end} ({count} pontos)</span>
-                <span class=\"action\">Abrir rota no Google Maps</span>
+                <span class=\"title\">{route_label} {index}</span>
+                <span class=\"coords\">{points_range_label} {start} {to_label} {end} ({count} {points_label})</span>
+                <span class=\"action\">{open_route_action}</span>
               </a>
             </li>
             """.format(
+                route_label=t("Route", "Rota"),
+                points_range_label=t("Points", "Pontos"),
+                to_label=t("to", "a"),
+                points_label=t("points", "pontos"),
+                open_route_action=t("Open route in Google Maps", "Abrir rota no Google Maps"),
                 index=route["index"],
                 start=route["start_point"],
                 end=route["end_point"],
@@ -101,8 +114,8 @@ def build_points_html_with_routes(mark_items, route_items):
     </head>
     <body>
       <div class=\"content\">
-        <h2>Lista de pontos (toque para abrir no celular)</h2>
-        <p class=\"meta\">Gerado em: {generated_at} | Total de pontos: {total}</p>
+        <h2>{points_list_title}</h2>
+        <p class=\"meta\">{generated_at_label}: {generated_at} | {total_points_label}: {total}</p>
         {routes_section}
         <ul class=\"mark-list\">{items}</ul>
       </div>
@@ -110,6 +123,9 @@ def build_points_html_with_routes(mark_items, route_items):
     </html>
     """.format(
         generated_at=generated_at,
+        points_list_title=t("Points list (tap to open on mobile)", "Lista de pontos (toque para abrir no celular)"),
+        generated_at_label=t("Generated at", "Gerado em"),
+        total_points_label=t("Total points", "Total de pontos"),
         total=len(mark_items),
         routes_section=(
             '<ul class="route-list">{}</ul>'.format("".join(route_html))

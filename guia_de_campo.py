@@ -49,11 +49,19 @@ class GuiaDeCampo:
         """
         # Save reference to the QGIS interface
         self.iface = iface
-        self.service = GuiaDeCampoService(self.iface)
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
-        # initialize locale
-        locale = QSettings().value('locale/userLocale')[0:2]
+        # Enforce plugin language policy: pt* -> pt_BR, all others -> en.
+        user_locale = str(QSettings().value('locale/userLocale', 'en')).lower()
+        if user_locale.startswith('pt'):
+            self.plugin_language = 'pt_BR'
+        else:
+            self.plugin_language = 'en'
+
+        self.service = GuiaDeCampoService(self.iface, self.plugin_language)
+
+        # initialize locale translator (optional, only for pt-BR when .qm exists)
+        locale = self.plugin_language
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
@@ -66,7 +74,7 @@ class GuiaDeCampo:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&GuiaDeCampo')
+        self.menu = self._t('&Field Guide', '&Guia de Campo')
 
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
@@ -86,6 +94,12 @@ class GuiaDeCampo:
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('GuiaDeCampo', message)
+
+    def _t(self, english_text, portuguese_text):
+        """Return pt-BR text only when QGIS language is Portuguese."""
+        if self.plugin_language == 'pt_BR':
+            return portuguese_text
+        return english_text
 
 
     def add_action(
@@ -168,7 +182,7 @@ class GuiaDeCampo:
         icon_path = ':/plugins/guia_de_campo/icon.png'
         self.add_action(
             icon_path,
-            text=self.tr(u'Guia de Campo'),
+            text=self._t('Field Guide', 'Guia de Campo'),
             callback=self.run,
             parent=self.iface.mainWindow())
 
@@ -192,7 +206,7 @@ class GuiaDeCampo:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlg = GuiaDeCampoDialog()
+            self.dlg = GuiaDeCampoDialog(self.plugin_language)
 
             # Connect dialog controls to service methods once per QGIS session.
             self.dlg.hybrid_layer_button.clicked.connect(

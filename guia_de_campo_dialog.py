@@ -29,10 +29,12 @@ import os
 class GuiaDeCampoDialog(QtWidgets.QDialog):
     """Main plugin dialog built in code (no .ui dependency)."""
 
-    def __init__(self, parent=None):
+    def __init__(self, plugin_language='en', parent=None):
         """Create all controls used by service actions."""
         super(GuiaDeCampoDialog, self).__init__(parent)
-        self.setWindowTitle('Guia de Campo')
+        self.plugin_language = plugin_language
+
+        self.setWindowTitle(self._t('Field Guide', 'Guia de Campo'))
         self.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, True)
         self.setWindowFlag(QtCore.Qt.WindowMinimizeButtonHint, True)
 
@@ -167,60 +169,71 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         layout.setSpacing(6)
 
         description = QtWidgets.QLabel(
-            'Ative o marcador abaixo para começar a clicar no mapa e marcar os pontos. '
-            'Adicione Google Hybrid se precisar de uma camada de referência inicial.',
+            self._t(
+                'Enable point marking below to start clicking on the map and collecting points. '
+                'Add Google Hybrid if you need a base reference layer.',
+                'Ative o marcador abaixo para começar a clicar no mapa e marcar os pontos. '
+                'Adicione Google Hybrid se precisar de uma camada de referência inicial.'
+            ),
             self
         )
         description.setWordWrap(True)
         layout.addWidget(description)
 
         self.mark_on_canvas_checkbox = QtWidgets.QCheckBox(
-            'Marcar no mapa (cliques múltiplos)', self
+            self._t('Mark on map (multiple clicks)', 'Marcar no mapa (cliques multiplos)'), self
         )
         layout.addWidget(self.mark_on_canvas_checkbox)
 
-        manual_group = QtWidgets.QGroupBox('Adicionar coordenada manual (WGS84)', self)
+        manual_group = QtWidgets.QGroupBox(
+            self._t('Add manual coordinate (WGS84)', 'Adicionar coordenada manual (WGS84)'),
+            self
+        )
         manual_layout = QtWidgets.QGridLayout(manual_group)
         manual_layout.setContentsMargins(8, 8, 8, 8)
         manual_layout.setHorizontalSpacing(6)
         manual_layout.setVerticalSpacing(6)
 
         self.manual_latitude_input = QtWidgets.QLineEdit(self)
-        self.manual_latitude_input.setPlaceholderText('Latitude (ex.: -23.550520)')
-        manual_layout.addWidget(QtWidgets.QLabel('Latitude', self), 0, 0)
+        self.manual_latitude_input.setPlaceholderText(
+            self._t('Latitude (e.g.: -23.550520)', 'Latitude (ex.: -23.550520)')
+        )
+        manual_layout.addWidget(QtWidgets.QLabel(self._t('Latitude', 'Latitude'), self), 0, 0)
         manual_layout.addWidget(self.manual_latitude_input, 1, 0)
 
         self.manual_longitude_input = QtWidgets.QLineEdit(self)
-        self.manual_longitude_input.setPlaceholderText('Longitude (ex.: -46.633308)')
-        manual_layout.addWidget(QtWidgets.QLabel('Longitude', self), 0, 1)
+        self.manual_longitude_input.setPlaceholderText(
+            self._t('Longitude (e.g.: -46.633308)', 'Longitude (ex.: -46.633308)')
+        )
+        manual_layout.addWidget(QtWidgets.QLabel(self._t('Longitude', 'Longitude'), self), 0, 1)
         manual_layout.addWidget(self.manual_longitude_input, 1, 1)
 
         self.add_manual_coordinate_button = QtWidgets.QPushButton(
-            'Adicionar coordenada', self
+            self._t('Add coordinate', 'Adicionar coordenada'), self
         )
         self.add_manual_coordinate_button.setObjectName('manualAddButton')
         manual_layout.addWidget(self.add_manual_coordinate_button, 2, 0, 1, 2)
         layout.addWidget(manual_group)
 
         self.hybrid_layer_button = QtWidgets.QPushButton(
-            'Adicionar Google Hybrid', self
+            self._t('Add Google Hybrid', 'Adicionar Google Hybrid'), self
         )
         self.hybrid_layer_button.setObjectName('hybridButton')
         layout.addWidget(self.hybrid_layer_button)
 
         self.route_all_points_button = QtWidgets.QPushButton(
-            'Abrir rota no Google Maps', self
+            self._t('Open route in Google Maps', 'Abrir rota no Google Maps'), self
         )
         self.route_all_points_button.setObjectName('routeAllButton')
         layout.addWidget(self.route_all_points_button)
 
         self.clear_marks_button = QtWidgets.QPushButton(
-            'Limpar marcações', self
+            self._t('Clear marks', 'Limpar marcacoes'), self
         )
         self.clear_marks_button.setObjectName('clearButton')
 
         self.remove_last_mark_button = QtWidgets.QPushButton(
-            'Remover última marcação', self
+            self._t('Remove last mark', 'Remover ultima marcacao'), self
         )
         self.remove_last_mark_button.setObjectName('removeLastButton')
 
@@ -231,12 +244,12 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         layout.addLayout(marks_actions_layout)
 
         self.export_csv_button = QtWidgets.QPushButton(
-            'Exportar pontos CSV', self
+            self._t('Export points CSV', 'Exportar pontos CSV'), self
         )
         self.export_csv_button.setObjectName('csvExportButton')
 
         self.import_csv_button = QtWidgets.QPushButton(
-            'Importar pontos CSV', self
+            self._t('Import points CSV', 'Importar pontos CSV'), self
         )
         self.import_csv_button.setObjectName('csvImportButton')
 
@@ -247,7 +260,7 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         layout.addLayout(csv_actions_layout)
 
         self.generate_pfd_button = QtWidgets.QPushButton(
-            'Gerar PDF', self
+            self._t('Generate PDF', 'Gerar PDF'), self
         )
         self.generate_pfd_button.setObjectName('generateButton')
         layout.addWidget(self.generate_pfd_button)
@@ -272,9 +285,14 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
 
         project_note = QtWidgets.QLabel(self)
         project_note.setText(
-            'Este é um projeto grátis e aberto, desenvolvido com o apoio da '
-            '<a href="https://farmanalytica.com.br">FARM Analytica</a>. '
-            'Entre em contato para soluções comerciais personalizadas.'
+            self._t(
+                'This is a free and open project, developed with support from '
+                '<a href="https://farmanalytica.com.br">FARM Analytica</a>. '
+                'Contact us for custom commercial solutions.',
+                'Este e um projeto gratis e aberto, desenvolvido com o apoio da '
+                '<a href="https://farmanalytica.com.br">FARM Analytica</a>. '
+                'Entre em contato para solucoes comerciais personalizadas.'
+            )
         )
         project_note.setTextFormat(QtCore.Qt.RichText)
         project_note.setOpenExternalLinks(True)
@@ -282,3 +300,9 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         project_note.setStyleSheet('color: #4A5568; font-size: 11px;')
         footer_layout.addWidget(project_note, 1)
         layout.addLayout(footer_layout)
+
+    def _t(self, english_text, portuguese_text):
+        """Return pt-BR text only when plugin language is Portuguese."""
+        if self.plugin_language == 'pt_BR':
+            return portuguese_text
+        return english_text

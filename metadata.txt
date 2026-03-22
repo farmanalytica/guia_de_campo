@@ -5,13 +5,13 @@
 [general]
 name=GuiaDeCampo
 qgisMinimumVersion=3.0
-description=Geração de PDFs com hiperlinks georreferenciados.
-version=0.1
+description=Field PDF reports with georeferenced hyperlinks / Relatorios PDF de campo com hiperlinks georreferenciados.
+version=1.0
 author=Caio Arantes, FARM Analytica
 email=caio.arantes@farmanaltyica.com.br
 qgisMaximumVersion=4.99
 
-about=Geração de PDFs com hiperlinks georreferenciados.
+about=Capture map points in QGIS, import and export CSV, open Google Maps routes, and generate mobile-friendly PDF reports with clickable links. / Capture pontos no mapa no QGIS, importe e exporte CSV, abra rotas no Google Maps e gere relatorios PDF mobile-friendly com links clicaveis.
 
 tracker=https://github.com/farmanalytica/guia_de_campo/issues
 repository=https://github.com/farmanalytica/guia_de_campo
@@ -24,7 +24,7 @@ hasProcessingProvider=no
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=python
+tags=python,qgis,pdf,field guide,guia de campo,csv,google maps
 
 homepage=https://farmanalytica.github.io/guia_de_campo/
 category=Plugins

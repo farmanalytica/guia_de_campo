@@ -20,8 +20,9 @@ from qgis.gui import QgsMapCanvasAnnotationItem, QgsMapToolEmitPoint, QgsVertexM
 class CanvasMarkerTool:
     """Handle map-click point capture and visual feedback on canvas."""
 
-    def __init__(self, iface):
+    def __init__(self, iface, plugin_language='en'):
         self.iface = iface
+        self.plugin_language = plugin_language
         self.canvas = self.iface.mapCanvas()
         self.coordinates = []
         self._markers = []
@@ -29,6 +30,12 @@ class CanvasMarkerTool:
         self._map_tool = None
         self._previous_map_tool = None
         self._wgs84 = QgsCoordinateReferenceSystem("EPSG:4326")
+
+    def _t(self, english_text, portuguese_text):
+        """Return pt-BR text only when plugin language is Portuguese."""
+        if self.plugin_language == 'pt_BR':
+            return portuguese_text
+        return english_text
 
     def _ensure_map_tool(self):
         """Lazily create the click tool and connect once."""
@@ -43,8 +50,11 @@ class CanvasMarkerTool:
             self._previous_map_tool = self.canvas.mapTool()
         self.canvas.setMapTool(self._map_tool)
         self.iface.messageBar().pushMessage(
-            "Guia de Campo",
-            "Modo de marcacao ativado. Clique no mapa para adicionar pontos.",
+            self._t("Field Guide", "Guia de Campo"),
+            self._t(
+                "Marking mode enabled. Click on the map to add points.",
+                "Modo de marcacao ativado. Clique no mapa para adicionar pontos.",
+            ),
             level=Qgis.Info,
             duration=3,
         )
@@ -109,9 +119,14 @@ class CanvasMarkerTool:
         self._label_items.append(label_item)
 
         self.iface.messageBar().pushMessage(
-            "Guia de Campo",
-            "Ponto {} salvo em WGS84: ({:.6f}, {:.6f})".format(
-                len(self.coordinates), longitude, latitude
+            self._t("Field Guide", "Guia de Campo"),
+            self._t(
+                "Point {} saved in WGS84: ({:.6f}, {:.6f})".format(
+                    len(self.coordinates), longitude, latitude
+                ),
+                "Ponto {} salvo em WGS84: ({:.6f}, {:.6f})".format(
+                    len(self.coordinates), longitude, latitude
+                ),
             ),
             level=Qgis.Success,
             duration=2,

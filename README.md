@@ -1,135 +1,135 @@
 # GuiaDeCampo (QGIS Plugin)
 
-Plugin para captura de pontos no mapa, armazenamento de coordenadas em WGS84 e automacoes de apoio para fluxo de campo.
+Plugin for capturing map points, storing WGS84 coordinates, and providing automation for field workflows.
 
 ## Developer Instructions
 
 ## Project Structure
 
-- `__init__.py`: entrypoint do plugin para o QGIS (`classFactory`).
-- `guia_de_campo.py`: ciclo de vida do plugin (menu, toolbar, abertura da janela).
-- `guia_de_campo_dialog.py`: UI principal criada em codigo (sem dependencia de `.ui`).
-- `guia_de_campo_service.py`: camada de servico que conecta eventos da UI com regras de negocio.
-- `modules/canvas_marker_tool.py`: captura de clique no canvas, marcadores visuais, labels numericos e coordenadas WGS84.
-- `modules/map_tools.py`: utilitarios de mapa (ex.: adicionar camada Google Hybrid).
-- `modules/pdf/composer.py`: orquestracao da geracao de PDF sem acoplar regras em um unico arquivo.
-- `modules/pdf/canvas_snapshot.py`: captura da visao atual do canvas para inserir no PDF.
-- `modules/pdf/links.py`: geracao de links Google Maps por ponto e por rota (origem + paradas + destino).
-- `modules/pdf/html_template.py`: template HTML com cards de rota e lista mobile-friendly de pontos.
-- `modules/pdf/writer.py`: escrita de PDF usando Qt nativo (`QPrinter` + `QTextDocument`).
-- `resources.py` / `resources.qrc`: recursos Qt (icone e afins).
-- `metadata.txt`: metadados exigidos pelo QGIS Plugin Manager.
+- `__init__.py`: QGIS plugin entrypoint (`classFactory`).
+- `guia_de_campo.py`: plugin lifecycle (menu, toolbar, window startup).
+- `guia_de_campo_dialog.py`: main UI built in code (no `.ui` dependency).
+- `guia_de_campo_service.py`: service layer connecting UI events to business rules.
+- `modules/canvas_marker_tool.py`: canvas click capture, visual markers, numeric labels, and WGS84 coordinates.
+- `modules/map_tools.py`: map utilities (for example, adding Google Hybrid layer).
+- `modules/pdf/composer.py`: PDF generation orchestration without concentrating rules in a single file.
+- `modules/pdf/canvas_snapshot.py`: captures current canvas view for PDF insertion.
+- `modules/pdf/links.py`: generates Google Maps links per point and per route (origin + stops + destination).
+- `modules/pdf/html_template.py`: HTML template with route cards and mobile-friendly point list.
+- `modules/pdf/writer.py`: PDF writing using native Qt (`QPrinter` + `QTextDocument`).
+- `resources.py` / `resources.qrc`: Qt resources (icon and related assets).
+- `metadata.txt`: metadata required by QGIS Plugin Manager.
 
 ## Runtime Requirements
 
-- QGIS LTR 3.x com Python embutido.
-- Execucao dentro do ambiente do QGIS (imports `qgis.*` nao resolvem em interpretador Python externo).
+- QGIS LTR 3.x with embedded Python.
+- Must run inside QGIS environment (`qgis.*` imports do not resolve in an external Python interpreter).
 
 ## Local Dev Setup (Windows)
 
-1. Clone ou copie o plugin para a pasta de plugins do perfil do QGIS.
-2. Caminho comum no Windows:
+1. Clone or copy the plugin to the QGIS profile plugins folder.
+2. Common path on Windows:
 	 `C:\Users\<usuario>\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\guia_de_campo`
-3. Reinicie o QGIS ou use Plugin Reloader para recarregar durante desenvolvimento.
-4. Ative o plugin em `Plugins > Manage and Install Plugins`.
+3. Restart QGIS or use Plugin Reloader to reload during development.
+4. Enable the plugin in `Plugins > Manage and Install Plugins`.
 
 ## Feature Overview
 
-### Marcar pontos no mapa
+### Mark points on the map
 
-1. Abrir o plugin.
-2. Marcar `Marcar no mapa (cliques multiplos)`.
-3. Clicar no canvas para adicionar pontos.
-4. Cada ponto:
-	 - cria um marcador visual;
-	 - cria um label numerico incremental com bom contraste;
-	 - salva coordenadas em WGS84 (`EPSG:4326`).
+1. Open the plugin.
+2. Enable `Mark on map (multiple clicks)`.
+3. Click the canvas to add points.
+4. Each point:
+	 - creates a visual marker;
+	 - creates an incremental numeric label with good contrast;
+	 - stores WGS84 coordinates (`EPSG:4326`).
 
-### Limpar marcacoes
+### Clear marks
 
-- Botao `Limpar marcacoes` remove marcadores, labels e coordenadas salvas.
+- `Clear marks` button removes markers, labels, and stored coordinates.
 
-### Remover ultima marcacao
+### Remove last mark
 
-- Botao `Remover ultima marcacao` desfaz apenas o ultimo ponto adicionado.
-- Mantem os demais pontos no mapa e na lista de coordenadas.
+- `Remove last mark` button undoes only the last added point.
+- Keeps all previous points on the map and in the coordinate list.
 
-### Inserir coordenadas manualmente
+### Add coordinates manually
 
-1. Preencher `Latitude` e `Longitude` na secao `Adicionar coordenada manual (WGS84)`.
-2. Clicar em `Adicionar coordenada`.
-3. O plugin valida formato decimal e limites WGS84:
-	- latitude entre -90 e 90;
-	- longitude entre -180 e 180.
-4. Em caso valido, o ponto e adicionado com marcador e numeracao no mapa, igual aos pontos por clique.
-5. Em caso invalido, o ponto e bloqueado e uma mensagem de aviso e exibida.
+1. Fill `Latitude` and `Longitude` in the `Add manual coordinate (WGS84)` section.
+2. Click `Add coordinate`.
+3. The plugin validates decimal format and WGS84 limits:
+	- latitude between -90 and 90;
+	- longitude between -180 and 180.
+4. When valid, the point is added with marker and numbering on the map, same as click-based points.
+5. When invalid, the point is blocked and a warning message is displayed.
 
-### Exportar pontos para CSV
+### Export points to CSV
 
-- Botao `Exportar pontos CSV` salva os pontos atuais em arquivo `.csv`.
-- O caminho inicial de salvamento abre na pasta Downloads do sistema (quando disponivel).
-- Estrutura exportada:
-	- `ordem`: sequencia de captura do ponto;
-	- `longitude`: coordenada WGS84 em decimal;
-	- `latitude`: coordenada WGS84 em decimal.
-- O export so e realizado quando ha ao menos 1 ponto marcado.
+- `Export points CSV` button saves current points to a `.csv` file.
+- Initial save path opens in system Downloads folder (when available).
+- Exported structure:
+	- `order`: point capture sequence;
+	- `longitude`: WGS84 decimal coordinate;
+	- `latitude`: WGS84 decimal coordinate.
+- Export runs only when at least 1 point exists.
 
-### Importar pontos de CSV
+### Import points from CSV
 
-- Botao `Importar pontos CSV` permite carregar pontos de um arquivo `.csv`.
-- O CSV deve conter cabecalho com as colunas `longitude` e `latitude`.
-- O plugin aceita decimal com `.` ou `,`.
-- Validacoes aplicadas na importacao:
-	- latitude entre -90 e 90;
-	- longitude entre -180 e 180.
-- Linhas invalidas sao ignoradas e o plugin exibe resumo com pontos importados e linhas ignoradas.
-- Pontos validos importados sao desenhados no mapa com numeracao sequencial, igual aos pontos capturados por clique.
+- `Import points CSV` button loads points from a `.csv` file.
+- CSV must contain a header with `longitude` and `latitude` columns.
+- Plugin accepts decimal values with `.` or `,`.
+- Import validations:
+	- latitude between -90 and 90;
+	- longitude between -180 and 180.
+- Invalid rows are skipped and the plugin shows a summary with imported points and ignored rows.
+- Valid imported points are drawn on the map with sequential numbering, same as click-captured points.
 
-### Gerar PDF
+### Generate PDF
 
-- Botao `Gerar PDF` abre o seletor de arquivo para salvar o relatorio.
-- O caminho inicial de salvamento abre na pasta Downloads do sistema (quando disponivel).
-- O PDF inclui:
-	- screenshot da visao atual do canvas (com marcacoes visiveis);
-	- link(s) de rota no Google Maps usando os pontos em ordem de captura;
-	- lista numerada de pontos em WGS84;
-	- links clicaveis grandes por ponto para Google Maps (`https://maps.google.com/?q=lat,lon`) com foco em uso mobile.
-- O metodo interno ainda pode manter o nome `generate_pfd` por compatibilidade de integracao, mas a funcionalidade agora e PDF real.
+- `Generate PDF` button opens file picker to save the report.
+- Initial save path opens in system Downloads folder (when available).
+- PDF includes:
+	- screenshot of current canvas view (with visible marks);
+	- Google Maps route link(s) using points in capture order;
+	- numbered WGS84 points list;
+	- large tappable per-point Google Maps links (`https://maps.google.com/?q=lat,lon`) optimized for mobile usage.
+- Internal method may still keep the name `generate_pfd` for integration compatibility, but functionality is real PDF generation.
 
-### Abrir rota no Google Maps
+### Open route in Google Maps
 
-- Botao `Abrir rota no Google Maps` abre navegacao com todos os pontos como paradas, respeitando a ordem de captura.
-- Para muitos pontos, o plugin divide automaticamente em trechos para evitar falhas de abertura por limite de URL/paradas.
+- `Open route in Google Maps` button opens navigation with all points as stops, preserving capture order.
+- For many points, plugin automatically splits route into segments to avoid URL/stop-limit opening failures.
 
-### Limites praticos de rota (Google Maps)
+### Practical route limits (Google Maps)
 
-- Fluxo comum mobile: ate cerca de 9 paradas intermediarias por URL (com origem e destino).
-- Fluxo comum desktop/web: pode suportar mais paradas, mas varia por cliente e tamanho da URL.
-- Estrategia do plugin: usar divisao automatica em trechos para manter confiabilidade entre dispositivos.
+- Common mobile flow: up to around 9 intermediate stops per URL (with origin and destination).
+- Common desktop/web flow: may support more stops, but depends on client and URL length.
+- Plugin strategy: automatic segmentation into route chunks for reliability across devices.
 
-### Camada Google Hybrid
+### Google Hybrid layer
 
-- Botao `Adicionar Google Hybrid` chama `hybrid_function` em `modules/map_tools.py`.
+- `Add Google Hybrid` button calls `hybrid_function` in `modules/map_tools.py`.
 
 ## Development Notes
 
-- Prefira manter logica de mapa em `modules/` e deixar `guia_de_campo_service.py` como orquestrador.
-- Para novas acoes de UI:
-	1. adicionar controle no dialogo;
-	2. adicionar metodo no service;
-	3. conectar sinal no `run()` de `guia_de_campo.py` (apenas uma vez).
-- Evite acoplar logica pesada diretamente no dialogo.
+- Prefer keeping map logic in `modules/` and using `guia_de_campo_service.py` as orchestrator.
+- For new UI actions:
+	1. add control in dialog;
+	2. add method in service;
+	3. connect signal in `run()` of `guia_de_campo.py` (only once).
+- Avoid coupling heavy logic directly in dialog class.
 
 ## Debugging
 
-- Use o `Python Console` do QGIS para verificar saidas de `print`.
-- Mensagens de fluxo para usuario final devem usar `iface.messageBar().pushMessage(...)`.
-- Se o plugin falhar ao carregar, verificar:
-	- imports em `modules/`;
-	- erros de identacao em Python;
-	- stack trace no painel de erros do QGIS.
+- Use QGIS `Python Console` to inspect `print` outputs.
+- User-facing flow messages should use `iface.messageBar().pushMessage(...)`.
+- If plugin fails to load, check:
+	- imports in `modules/`;
+	- Python indentation errors;
+	- stack trace in QGIS error panel.
 
 ## Suggested Next Improvements
 
-- Suportar outros formatos de intercambio alem do CSV (ex.: GeoJSON).
-- Adicionar testes basicos para funcoes de transformacao e limpeza de estado.
+- Support other exchange formats beyond CSV (for example, GeoJSON).
+- Add basic tests for transformation and state cleanup functions.
