@@ -188,6 +188,23 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         description.setWordWrap(True)
         layout.addWidget(description)
 
+        project_website_label = QtWidgets.QLabel(self)
+        project_website_label.setText(
+            self._t(
+                'Project website: '
+                '<a href="https://farmanalytica.github.io/guia_de_campo/">'
+                'farmanalytica.github.io/guia_de_campo</a>',
+                'Site do projeto: '
+                '<a href="https://farmanalytica.github.io/guia_de_campo/">'
+                'farmanalytica.github.io/guia_de_campo</a>'
+            )
+        )
+        project_website_label.setTextFormat(_qt_enum('TextFormat', 'RichText', 'RichText'))
+        project_website_label.setOpenExternalLinks(True)
+        project_website_label.setWordWrap(True)
+        project_website_label.setStyleSheet('color: #2B6CB0; font-size: 11px; font-weight: 600;')
+        layout.addWidget(project_website_label)
+
         self.mark_on_canvas_checkbox = QtWidgets.QCheckBox(
             self._t('Mark on map (multiple clicks)', 'Marcar no mapa (cliques multiplos)'), self
         )
