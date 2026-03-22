@@ -1,4 +1,4 @@
-# GuiaDeCampo (QGIS Plugin)
+# FieldGuide (QGIS Plugin)
 
 Plugin for capturing map points, storing WGS84 coordinates, and providing automation for field workflows.
 
@@ -29,7 +29,7 @@ Plugin for capturing map points, storing WGS84 coordinates, and providing automa
 
 1. Clone or copy the plugin to the QGIS profile plugins folder.
 2. Common path on Windows:
-	 `C:\Users\<usuario>\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\guia_de_campo`
+	 `C:\Users\<usuario>\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\fieldguide`
 3. Restart QGIS or use Plugin Reloader to reload during development.
 4. Enable the plugin in `Plugins > Manage and Install Plugins`.
 

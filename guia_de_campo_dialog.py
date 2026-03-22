@@ -192,11 +192,11 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         project_website_label.setText(
             self._t(
                 'Project website: '
-                '<a href="https://farmanalytica.github.io/guia_de_campo/">'
-                'farmanalytica.github.io/guia_de_campo</a>',
+                '<a href="https://farmanalytica.github.io/fieldguide/">'
+                'farmanalytica.github.io/fieldguide</a>',
                 'Site do projeto: '
-                '<a href="https://farmanalytica.github.io/guia_de_campo/">'
-                'farmanalytica.github.io/guia_de_campo</a>'
+                '<a href="https://farmanalytica.github.io/fieldguide/">'
+                'farmanalytica.github.io/fieldguide</a>'
             )
         )
         project_website_label.setTextFormat(_qt_enum('TextFormat', 'RichText', 'RichText'))
