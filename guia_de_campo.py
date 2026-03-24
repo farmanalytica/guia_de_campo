@@ -243,6 +243,12 @@ class GuiaDeCampo:
             self.dlg.export_csv_button.clicked.connect(
                 self.service.export_marks_csv
             )
+            self.dlg.export_gpx_button.clicked.connect(
+                self.service.export_marks_gpx
+            )
+            self.dlg.add_temp_layer_button.clicked.connect(
+                self.service.add_marks_to_temporary_layer
+            )
             self.dlg.import_csv_button.clicked.connect(
                 self.service.import_marks_csv
             )

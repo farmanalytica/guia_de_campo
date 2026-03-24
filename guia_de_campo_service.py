@@ -2,13 +2,17 @@ from qgis.core import (
     Qgis,
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransform,
+    QgsDistanceArea,
+    QgsFeature,
+    QgsField,
     QgsGeometry,
     QgsMessageLog,
     QgsPointXY,
     QgsProject,
+    QgsVectorLayer,
     QgsWkbTypes,
 )
-from qgis.PyQt.QtCore import QStandardPaths, QUrl
+from qgis.PyQt.QtCore import QStandardPaths, QUrl, QVariant
 from qgis.PyQt.QtGui import QDesktopServices
 from qgis.PyQt.QtWidgets import QFileDialog, QMessageBox
 
@@ -17,6 +21,7 @@ import math
 import os
 import random
 import traceback
+import xml.etree.ElementTree as ET
 
 from .modules.canvas_marker_tool import CanvasMarkerTool
 from .modules.map_tools import hybrid_function
@@ -54,10 +59,12 @@ class GuiaDeCampoService:
     """Application service that orchestrates dialog actions and map tools."""
 
     MAX_POINTS_PER_GOOGLE_ROUTE = 10
-    MAX_MARKS_PER_FEATURE = 10
+    MAX_MARKS_PER_FEATURE = 50
     FEATURE_SAMPLE_METHOD_SPREAD = 'spread_optimized'
     FEATURE_SAMPLE_METHOD_GRID = 'systematic_grid'
     FEATURE_SAMPLE_METHOD_ZIGZAG = 'zigzag_transect'
+    FEATURE_SAMPLE_QUANTITY_FIXED = 'fixed_count'
+    FEATURE_SAMPLE_QUANTITY_DENSITY = 'area_density'
 
     def __init__(self, iface, plugin_language='en'):
         """Initialize services that require access to QGIS interface."""
@@ -340,14 +347,13 @@ class GuiaDeCampoService:
             )
             return
 
-        sample_count, distribution_method = self._selected_feature_sampling_settings()
-        action_title = self._polygon_sampling_action_title(sample_count)
+        sampling_settings = self._selected_feature_sampling_settings()
+        action_title = self._polygon_sampling_action_title(sampling_settings)
 
         try:
             sampled_points, skipped_count = self._extract_layer_sample_points(
                 layer,
-                sample_count,
-                distribution_method,
+                sampling_settings,
             )
         except Exception:
             self.iface.messageBar().pushMessage(
@@ -392,8 +398,8 @@ class GuiaDeCampoService:
 
         self.marker_tool.add_wgs84_points(sampled_points)
 
-        points_label = self._sampling_points_label(distribution_method, sample_count)
-        method_label = self._sampling_method_label(distribution_method, sample_count)
+        points_label = self._sampling_points_label(sampling_settings)
+        method_label = self._sampling_method_label(sampling_settings)
         sampled_point_count = len(sampled_points)
 
         if skipped_count > 0:
@@ -441,17 +447,25 @@ class GuiaDeCampoService:
         )
 
     def _selected_feature_sampling_settings(self):
-        """Return the current per-feature mark count and distribution method."""
+        """Return the current polygon sampling quantity and distribution settings."""
+        quantity_mode = self.FEATURE_SAMPLE_QUANTITY_FIXED
         sample_count = 1
+        hectares_per_mark = 1.0
         distribution_method = self.FEATURE_SAMPLE_METHOD_SPREAD
 
         if self.dialog is not None:
+            quantity_mode = self.dialog.sample_quantity_mode()
             sample_count = self.dialog.sample_count_per_feature()
+            hectares_per_mark = self.dialog.sample_density_hectares()
             distribution_method = self.dialog.sample_distribution_method()
 
+        if quantity_mode not in {
+            self.FEATURE_SAMPLE_QUANTITY_FIXED,
+            self.FEATURE_SAMPLE_QUANTITY_DENSITY,
+        }:
+            quantity_mode = self.FEATURE_SAMPLE_QUANTITY_FIXED
         sample_count = max(1, min(self.MAX_MARKS_PER_FEATURE, int(sample_count)))
-        if sample_count == 1:
-            return sample_count, 'centroid'
+        hectares_per_mark = max(0.1, float(hectares_per_mark))
 
         valid_methods = {
             self.FEATURE_SAMPLE_METHOD_SPREAD,
@@ -460,35 +474,78 @@ class GuiaDeCampoService:
         }
         if distribution_method not in valid_methods:
             distribution_method = self.FEATURE_SAMPLE_METHOD_SPREAD
-        return sample_count, distribution_method
+        if quantity_mode == self.FEATURE_SAMPLE_QUANTITY_FIXED and sample_count == 1:
+            distribution_method = 'centroid'
+        return {
+            'quantity_mode': quantity_mode,
+            'sample_count': sample_count,
+            'hectares_per_mark': hectares_per_mark,
+            'distribution_method': distribution_method,
+        }
 
-    def _polygon_sampling_action_title(self, sample_count):
+    def _polygon_sampling_action_title(self, sampling_settings):
         """Return a context-appropriate title for polygon sampling actions."""
-        if sample_count == 1:
+        if (
+            sampling_settings['quantity_mode'] == self.FEATURE_SAMPLE_QUANTITY_FIXED
+            and sampling_settings['sample_count'] == 1
+        ):
             return self._t('Mark feature centroids', 'Marcar centroides da camada')
         return self._t('Mark feature samples', 'Marcar amostras da camada')
 
-    def _sampling_method_label(self, distribution_method, sample_count):
-        """Return a localized label for the currently selected sampling method."""
-        if sample_count == 1 or distribution_method == 'centroid':
-            return self._t('centroid', 'centroide')
-        if distribution_method == self.FEATURE_SAMPLE_METHOD_GRID:
-            return self._t('systematic grid', 'grade sistematica')
-        if distribution_method == self.FEATURE_SAMPLE_METHOD_ZIGZAG:
-            return self._t('zigzag transect', 'transecto em zig-zag')
-        return self._t('spread optimized', 'otimizado por distribuição')
+    def _format_density_value(self, value):
+        """Return a compact numeric label for hectares-per-mark values."""
+        return '{:g}'.format(round(float(value), 2))
 
-    def _sampling_points_label(self, distribution_method, sample_count):
+    def _sampling_method_label(self, sampling_settings):
+        """Return a localized label for the currently selected sampling method."""
+        distribution_method = sampling_settings['distribution_method']
+        quantity_mode = sampling_settings['quantity_mode']
+        sample_count = sampling_settings['sample_count']
+
+        if (
+            (
+                quantity_mode == self.FEATURE_SAMPLE_QUANTITY_FIXED
+                and sample_count == 1
+            )
+            or distribution_method == 'centroid'
+        ):
+            return self._t('centroid', 'centroide')
+
+        if distribution_method == self.FEATURE_SAMPLE_METHOD_GRID:
+            base_label = self._t('systematic grid', 'grade sistematica')
+        elif distribution_method == self.FEATURE_SAMPLE_METHOD_ZIGZAG:
+            base_label = self._t('zigzag transect', 'transecto em zig-zag')
+        else:
+            base_label = self._t('spread optimized', 'otimizado por distribuição')
+
+        if quantity_mode == self.FEATURE_SAMPLE_QUANTITY_DENSITY:
+            density_label = self._format_density_value(sampling_settings['hectares_per_mark'])
+            return self._t(
+                '{} at 1 mark per {} ha'.format(base_label, density_label),
+                '{} em 1 marcação a cada {} ha'.format(base_label, density_label),
+            )
+        return base_label
+
+    def _sampling_points_label(self, sampling_settings):
         """Return a localized label for the generated mark type."""
-        if sample_count == 1 or distribution_method == 'centroid':
+        if (
+            sampling_settings['quantity_mode'] == self.FEATURE_SAMPLE_QUANTITY_FIXED
+            and (
+                sampling_settings['sample_count'] == 1
+                or sampling_settings['distribution_method'] == 'centroid'
+            )
+        ):
             return self._t('centroid mark(s)', 'marcação(ões) de centroide')
         return self._t('sample mark(s)', 'marcação(ões) de amostra')
 
-    def _extract_layer_sample_points(self, layer, sample_count, distribution_method):
+    def _extract_layer_sample_points(self, layer, sampling_settings):
         """Return WGS84 sample marks for each feature in the selected polygon layer."""
         sampled_points = []
         skipped_count = 0
         transform = QgsCoordinateTransform(layer.crs(), self.wgs84, self.project)
+        area_measure = None
+        if sampling_settings['quantity_mode'] == self.FEATURE_SAMPLE_QUANTITY_DENSITY:
+            area_measure = self._build_area_measure(layer)
 
         for feature in layer.getFeatures():
             geometry = feature.geometry()
@@ -497,18 +554,23 @@ class GuiaDeCampoService:
                 continue
 
             try:
+                feature_sample_count = self._feature_sample_count(
+                    geometry,
+                    sampling_settings,
+                    area_measure=area_measure,
+                )
                 feature_points = self._build_feature_sample_points(
                     layer,
                     feature,
                     geometry,
-                    sample_count,
-                    distribution_method,
+                    feature_sample_count,
+                    sampling_settings['distribution_method'],
                 )
             except Exception:
                 skipped_count += 1
                 continue
 
-            if len(feature_points) != sample_count:
+            if len(feature_points) != feature_sample_count:
                 skipped_count += 1
                 continue
 
@@ -529,6 +591,30 @@ class GuiaDeCampoService:
             sampled_points.extend(feature_wgs84_points)
 
         return sampled_points, skipped_count
+
+    def _build_area_measure(self, layer):
+        """Return a configured area measurer for geometries in the layer CRS."""
+        area_measure = QgsDistanceArea()
+        area_measure.setSourceCrs(layer.crs(), self.project.transformContext())
+        ellipsoid = self.project.ellipsoid()
+        if not ellipsoid or str(ellipsoid).upper() == 'NONE':
+            ellipsoid = 'WGS84'
+        area_measure.setEllipsoid(ellipsoid)
+        return area_measure
+
+    def _feature_sample_count(self, geometry, sampling_settings, area_measure=None):
+        """Resolve the number of marks to generate for a single feature."""
+        if sampling_settings['quantity_mode'] != self.FEATURE_SAMPLE_QUANTITY_DENSITY:
+            return max(1, min(self.MAX_MARKS_PER_FEATURE, sampling_settings['sample_count']))
+
+        if area_measure is None:
+            return 1
+
+        area_square_meters = abs(area_measure.measureArea(geometry))
+        area_hectares = area_square_meters / 10000.0
+        hectares_per_mark = max(0.1, float(sampling_settings['hectares_per_mark']))
+        sample_count = int(math.ceil(max(area_hectares, 1e-9) / hectares_per_mark))
+        return max(1, min(self.MAX_MARKS_PER_FEATURE, sample_count))
 
     def _build_feature_sample_points(
         self,
@@ -1411,6 +1497,241 @@ class GuiaDeCampoService:
             level=Qgis.Success,
             duration=5,
         )
+
+    def export_marks_gpx(self):
+        """Export captured WGS84 points to a GPS-compatible GPX file."""
+        coordinates = self.marker_tool.coordinates
+        if not coordinates:
+            self.iface.messageBar().pushMessage(
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t('There are no points to export.', 'Não há pontos para exportar.'),
+                level=Qgis.Warning,
+                duration=4,
+            )
+            return
+
+        default_gpx_path = self._default_output_path('field_guide_points.gpx')
+
+        output_path, _ = QFileDialog.getSaveFileName(
+            self._dialog_parent(),
+            self._t('Save points to GPX', 'Salvar pontos em GPX'),
+            default_gpx_path,
+            'GPX Files (*.gpx)',
+        )
+        if not output_path:
+            return
+        if not output_path.lower().endswith('.gpx'):
+            output_path += '.gpx'
+
+        try:
+            self._write_marks_gpx(output_path, coordinates)
+        except Exception:
+            QgsMessageLog.logMessage(
+                traceback.format_exc(),
+                'Field Guide',
+                level=Qgis.Critical,
+            )
+            self.iface.messageBar().pushMessage(
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t('Error exporting GPX.', 'Erro ao exportar GPX.'),
+                level=Qgis.Critical,
+                duration=6,
+            )
+            return
+
+        self.iface.messageBar().pushMessage(
+            self._t('Field Guide', 'Guia de Campo'),
+            self._t(
+                'GPX exported successfully: {}'.format(output_path),
+                'GPX exportado com sucesso: {}'.format(output_path),
+            ),
+            level=Qgis.Success,
+            duration=5,
+        )
+
+    def _write_marks_gpx(self, output_path, coordinates):
+        """Write the captured marks as GPS waypoints and an optional ordered route."""
+        gpx = ET.Element(
+            'gpx',
+            attrib={
+                'version': '1.1',
+                'creator': 'Field Guide QGIS Plugin',
+                'xmlns': 'http://www.topografix.com/GPX/1/1',
+                'xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+                'xsi:schemaLocation': (
+                    'http://www.topografix.com/GPX/1/1 '
+                    'http://www.topografix.com/GPX/1/1/gpx.xsd'
+                ),
+            },
+        )
+
+        metadata = ET.SubElement(gpx, 'metadata')
+        ET.SubElement(metadata, 'name').text = 'Field Guide Marks'
+        ET.SubElement(metadata, 'desc').text = (
+            'Captured marks exported from the Field Guide QGIS plugin.'
+        )
+
+        for index, (longitude, latitude) in enumerate(coordinates, start=1):
+            waypoint = ET.SubElement(
+                gpx,
+                'wpt',
+                attrib={
+                    'lat': '{:.8f}'.format(latitude),
+                    'lon': '{:.8f}'.format(longitude),
+                },
+            )
+            waypoint_name = self._portable_waypoint_name(index)
+            ET.SubElement(waypoint, 'name').text = waypoint_name
+            ET.SubElement(waypoint, 'cmt').text = 'Field Guide mark {}'.format(index)
+            ET.SubElement(
+                waypoint,
+                'desc',
+            ).text = 'Mark {} ({:.8f}, {:.8f})'.format(index, latitude, longitude)
+            ET.SubElement(waypoint, 'sym').text = 'Waypoint'
+            ET.SubElement(waypoint, 'type').text = 'user'
+
+        if len(coordinates) >= 2:
+            route = ET.SubElement(gpx, 'rte')
+            ET.SubElement(route, 'name').text = 'Field Guide Route'
+            ET.SubElement(route, 'desc').text = (
+                'Ordered route built from captured Field Guide marks.'
+            )
+            for index, (longitude, latitude) in enumerate(coordinates, start=1):
+                route_point = ET.SubElement(
+                    route,
+                    'rtept',
+                    attrib={
+                        'lat': '{:.8f}'.format(latitude),
+                        'lon': '{:.8f}'.format(longitude),
+                    },
+                )
+                ET.SubElement(route_point, 'name').text = self._portable_waypoint_name(index)
+
+        tree = ET.ElementTree(gpx)
+        try:
+            ET.indent(tree, space='  ')
+        except AttributeError:
+            pass
+        tree.write(output_path, encoding='utf-8', xml_declaration=True)
+
+    def _portable_waypoint_name(self, index):
+        """Return a short waypoint name that works well on handheld GPS units."""
+        return 'FG{:03d}'.format(index)
+
+    def add_marks_to_temporary_layer(self):
+        """Add the current marks to the project as a temporary point vector layer."""
+        coordinates = self.marker_tool.coordinates
+        if not coordinates:
+            self.iface.messageBar().pushMessage(
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t('There are no points to add.', 'Não há pontos para adicionar.'),
+                level=Qgis.Warning,
+                duration=4,
+            )
+            return
+
+        target_crs = self.project.crs()
+        if target_crs is None or not target_crs.isValid():
+            target_crs = self.wgs84
+
+        layer_name = self._temporary_marks_layer_name()
+        layer_uri = 'Point?crs={}'.format(target_crs.authid())
+        layer = QgsVectorLayer(layer_uri, layer_name, 'memory')
+        if not layer.isValid():
+            self.iface.messageBar().pushMessage(
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Could not create the temporary point layer.',
+                    'Não foi possível criar a camada temporária de pontos.',
+                ),
+                level=Qgis.Critical,
+                duration=6,
+            )
+            return
+
+        try:
+            provider = layer.dataProvider()
+            provider.addAttributes([
+                QgsField('order', QVariant.Int),
+                QgsField('name', QVariant.String),
+                QgsField('longitude', QVariant.Double, 'double', 20, 8),
+                QgsField('latitude', QVariant.Double, 'double', 20, 8),
+            ])
+            layer.updateFields()
+
+            transform = None
+            if target_crs.authid() != self.wgs84.authid():
+                transform = QgsCoordinateTransform(self.wgs84, target_crs, self.project)
+
+            features = []
+            for index, (longitude, latitude) in enumerate(coordinates, start=1):
+                point = QgsPointXY(longitude, latitude)
+                if transform is not None:
+                    point = transform.transform(point)
+
+                feature = QgsFeature(layer.fields())
+                feature.setGeometry(QgsGeometry.fromPointXY(point))
+                feature.setAttributes([
+                    index,
+                    self._portable_waypoint_name(index),
+                    float(longitude),
+                    float(latitude),
+                ])
+                features.append(feature)
+
+            provider.addFeatures(features)
+            layer.updateExtents()
+            self.project.addMapLayer(layer)
+        except Exception:
+            QgsMessageLog.logMessage(
+                traceback.format_exc(),
+                'Field Guide',
+                level=Qgis.Critical,
+            )
+            self.iface.messageBar().pushMessage(
+                self._t('Field Guide', 'Guia de Campo'),
+                self._t(
+                    'Error adding the temporary point layer.',
+                    'Erro ao adicionar a camada temporária de pontos.',
+                ),
+                level=Qgis.Critical,
+                duration=6,
+            )
+            return
+
+        self.iface.messageBar().pushMessage(
+            self._t('Field Guide', 'Guia de Campo'),
+            self._t(
+                'Temporary layer added to the project: {} ({} point(s)).'.format(
+                    layer.name(),
+                    len(features),
+                ),
+                'Camada temporária adicionada ao projeto: {} ({} ponto(s)).'.format(
+                    layer.name(),
+                    len(features),
+                ),
+            ),
+            level=Qgis.Success,
+            duration=5,
+        )
+
+    def _temporary_marks_layer_name(self):
+        """Return a readable layer name for temporary project exports."""
+        base_name = self._t('Field Guide Marks', 'Marcações Guia de Campo')
+        existing_names = {
+            layer.name()
+            for layer in self.project.mapLayers().values()
+            if hasattr(layer, 'name')
+        }
+        if base_name not in existing_names:
+            return base_name
+
+        suffix = 2
+        while True:
+            candidate_name = '{} {}'.format(base_name, suffix)
+            if candidate_name not in existing_names:
+                return candidate_name
+            suffix += 1
 
     def import_marks_csv(self):
         """Import WGS84 points from CSV and draw them on the map canvas."""

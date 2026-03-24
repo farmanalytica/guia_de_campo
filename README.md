@@ -1,6 +1,6 @@
 # Field Guide 2.0
 
-Field Guide is a QGIS plugin for map point capture, polygon-based sampling, CSV exchange, Google Maps route opening, and mobile-friendly PDF field reports.
+Field Guide is a QGIS plugin for map point capture, polygon-based sampling, CSV and GPX exchange, Google Maps route opening, and mobile-friendly PDF field reports.
 
 Version 2.0 expands the plugin from point capture into a fuller field workflow with polygon feature sampling, selected-mark deletion, and improved spatial distribution methods.
 
@@ -10,6 +10,7 @@ Version 2.0 expands the plugin from point capture into a fuller field workflow w
 - Delete a selected mark from the session list, remove the last mark, or clear the full session.
 - Add manual WGS84 coordinates with validation.
 - Export and import CSV point lists.
+- Export GPS-compatible GPX waypoint files for handheld devices such as Garmin units.
 - Open ordered Google Maps routes with automatic chunking for longer sessions.
 - Generate PDF reports with canvas snapshot, route links, and per-point mobile links.
 - Generate marks inside polygon features with `1` to `10` marks per feature.
@@ -60,7 +61,7 @@ These methods were tuned to improve internal spacing, respect feature shape, and
    - `Zigzag transect`: field-style serpentine pattern guided by feature size and shape.
 5. Append to or replace the current session list.
 
-### CSV import/export
+### CSV and GPX export
 
 - Exported CSV columns:
   - `order`
@@ -68,6 +69,8 @@ These methods were tuned to improve internal spacing, respect feature shape, and
   - `latitude`
 - Import expects `longitude` and `latitude` headers.
 - Decimal values with `.` or `,` are accepted.
+- GPX export writes WGS84 waypoints with short portable names like `FG001`.
+- When 2 or more points exist, GPX export also includes an ordered route section.
 
 ### PDF generation
 

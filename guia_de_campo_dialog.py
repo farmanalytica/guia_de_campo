@@ -124,7 +124,9 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
 
         self.mark_on_canvas_checkbox.toggled.connect(self.update_capture_status)
         self.centroid_layer_combo.currentIndexChanged.connect(self._update_centroid_action_state)
+        self.sample_quantity_mode_combo.currentIndexChanged.connect(self._update_sampling_controls)
         self.samples_per_feature_spinbox.valueChanged.connect(self._update_sampling_controls)
+        self.sample_density_spinbox.valueChanged.connect(self._update_sampling_controls)
         self.sample_distribution_combo.currentIndexChanged.connect(self._update_sampling_controls)
         self.points_list_widget.itemSelectionChanged.connect(self._on_points_selection_changed)
         self.update_capture_status(self.mark_on_canvas_checkbox.isChecked())
@@ -427,7 +429,7 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
                 'selection-color: {};'.format(_color_to_hex(highlighted_text)),
             ),
             _css_block(
-                'QSpinBox',
+                'QSpinBox, QDoubleSpinBox',
                 'min-height: 30px;',
                 'border: 1px solid {};'.format(_color_to_hex(panel_border)),
                 'border-radius: 8px;',
@@ -437,9 +439,12 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
                 'selection-background-color: {};'.format(_color_to_hex(highlight)),
                 'selection-color: {};'.format(_color_to_hex(highlighted_text)),
             ),
-            _css_block('QSpinBox:focus', 'border: 1px solid {};'.format(_color_to_hex(highlight))),
             _css_block(
-                'QSpinBox:disabled',
+                'QSpinBox:focus, QDoubleSpinBox:focus',
+                'border: 1px solid {};'.format(_color_to_hex(highlight)),
+            ),
+            _css_block(
+                'QSpinBox:disabled, QDoubleSpinBox:disabled',
                 'background: {};'.format(_color_to_hex(panel_bg)),
                 'color: {};'.format(_color_to_hex(subtle_text)),
                 'border-color: {};'.format(_color_to_hex(separator)),
@@ -590,21 +595,50 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         sampling_settings_layout.setHorizontalSpacing(8)
         sampling_settings_layout.setVerticalSpacing(6)
 
-        sampling_settings_layout.addWidget(
-            QtWidgets.QLabel(self._t('Marks per feature', 'Marcações por feição'), self),
-            0,
-            0,
+        self.sample_quantity_mode_label = QtWidgets.QLabel(
+            self._t('Sampling quantity', 'Quantidade de amostragem'),
+            self,
         )
+        sampling_settings_layout.addWidget(self.sample_quantity_mode_label, 0, 0)
+        self.sample_quantity_mode_combo = QtWidgets.QComboBox(self)
+        self.sample_quantity_mode_combo.addItem(
+            self._t('Fixed marks per feature', 'Marcações fixas por feição'),
+            'fixed_count',
+        )
+        self.sample_quantity_mode_combo.addItem(
+            self._t('Density by area', 'Densidade por área'),
+            'area_density',
+        )
+        sampling_settings_layout.addWidget(self.sample_quantity_mode_combo, 0, 1)
+
+        self.samples_per_feature_label = QtWidgets.QLabel(
+            self._t('Marks per feature', 'Marcações por feição'),
+            self,
+        )
+        sampling_settings_layout.addWidget(self.samples_per_feature_label, 1, 0)
         self.samples_per_feature_spinbox = QtWidgets.QSpinBox(self)
-        self.samples_per_feature_spinbox.setRange(1, 10)
+        self.samples_per_feature_spinbox.setRange(1, 50)
         self.samples_per_feature_spinbox.setValue(1)
-        sampling_settings_layout.addWidget(self.samples_per_feature_spinbox, 0, 1)
+        sampling_settings_layout.addWidget(self.samples_per_feature_spinbox, 1, 1)
+
+        self.sample_density_label = QtWidgets.QLabel(
+            self._t('Hectares per mark', 'Hectares por marcação'),
+            self,
+        )
+        sampling_settings_layout.addWidget(self.sample_density_label, 2, 0)
+        self.sample_density_spinbox = QtWidgets.QDoubleSpinBox(self)
+        self.sample_density_spinbox.setRange(0.1, 100000.0)
+        self.sample_density_spinbox.setDecimals(2)
+        self.sample_density_spinbox.setSingleStep(0.25)
+        self.sample_density_spinbox.setValue(1.0)
+        self.sample_density_spinbox.setSuffix(' ha')
+        sampling_settings_layout.addWidget(self.sample_density_spinbox, 2, 1)
 
         self.sample_distribution_label = QtWidgets.QLabel(
             self._t('Distribution method', 'Método de distribuição'),
             self,
         )
-        sampling_settings_layout.addWidget(self.sample_distribution_label, 1, 0)
+        sampling_settings_layout.addWidget(self.sample_distribution_label, 3, 0)
 
         self.sample_distribution_combo = QtWidgets.QComboBox(self)
         self.sample_distribution_combo.addItem(
@@ -619,7 +653,7 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
             self._t('Zigzag transect', 'Transecto em zig-zag'),
             'zigzag_transect',
         )
-        sampling_settings_layout.addWidget(self.sample_distribution_combo, 1, 1)
+        sampling_settings_layout.addWidget(self.sample_distribution_combo, 3, 1)
         capture_layout.addLayout(sampling_settings_layout)
 
         self.sample_distribution_hint_label = QtWidgets.QLabel(self)
@@ -806,8 +840,8 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
 
         output_hint = QtWidgets.QLabel(
             self._t(
-                'Import coordinates from CSV, export the current session, or generate the field PDF report.',
-                'Importe coordenadas de CSV, exporte a sessão atual ou gere o PDF de campo.',
+                'Import coordinates from CSV, export the current session to CSV or GPX, add the marks as a temporary layer, or generate the field PDF report.',
+                'Importe coordenadas de CSV, exporte a sessão atual em CSV ou GPX, adicione as marcações como camada temporária ou gere o PDF de campo.',
             ),
             self,
         )
@@ -815,22 +849,37 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         output_hint.setWordWrap(True)
         output_layout.addWidget(output_hint)
 
-        csv_actions_layout = QtWidgets.QHBoxLayout()
-        csv_actions_layout.setSpacing(8)
+        csv_actions_layout = QtWidgets.QGridLayout()
+        csv_actions_layout.setHorizontalSpacing(8)
+        csv_actions_layout.setVerticalSpacing(8)
 
         self.import_csv_button = QtWidgets.QPushButton(
             self._t('Import points CSV', 'Importar pontos CSV'),
             self,
         )
         self.import_csv_button.setObjectName('csvImportButton')
-        csv_actions_layout.addWidget(self.import_csv_button)
+        csv_actions_layout.addWidget(self.import_csv_button, 0, 0)
 
         self.export_csv_button = QtWidgets.QPushButton(
             self._t('Export points CSV', 'Exportar pontos CSV'),
             self,
         )
         self.export_csv_button.setObjectName('csvExportButton')
-        csv_actions_layout.addWidget(self.export_csv_button)
+        csv_actions_layout.addWidget(self.export_csv_button, 0, 1)
+
+        self.export_gpx_button = QtWidgets.QPushButton(
+            self._t('Export GPS GPX', 'Exportar GPS GPX'),
+            self,
+        )
+        self.export_gpx_button.setObjectName('gpxExportButton')
+        csv_actions_layout.addWidget(self.export_gpx_button, 1, 0)
+
+        self.add_temp_layer_button = QtWidgets.QPushButton(
+            self._t('Add Temporary Layer', 'Adicionar Camada Temporária'),
+            self,
+        )
+        self.add_temp_layer_button.setObjectName('tempLayerButton')
+        csv_actions_layout.addWidget(self.add_temp_layer_button, 1, 1)
 
         output_layout.addLayout(csv_actions_layout)
 
@@ -945,7 +994,18 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
 
     def sample_count_per_feature(self):
         """Return the requested number of marks per polygon feature."""
-        return max(1, min(10, int(self.samples_per_feature_spinbox.value())))
+        return max(1, min(50, int(self.samples_per_feature_spinbox.value())))
+
+    def sample_quantity_mode(self):
+        """Return whether polygon sampling uses a fixed count or area density."""
+        quantity_mode = self.sample_quantity_mode_combo.currentData()
+        if quantity_mode not in {'fixed_count', 'area_density'}:
+            return 'fixed_count'
+        return quantity_mode
+
+    def sample_density_hectares(self):
+        """Return the configured hectares-per-mark density value."""
+        return max(0.1, float(self.sample_density_spinbox.value()))
 
     def sample_distribution_method(self):
         """Return the selected multi-point distribution method."""
@@ -954,15 +1014,48 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
             return 'spread_optimized'
         return method
 
+    def _format_density_value(self, value):
+        """Return a compact density number for labels and hints."""
+        return '{:g}'.format(round(float(value), 2))
+
     def _update_sampling_controls(self):
         """Refresh polygon sampling hints and control states."""
+        quantity_mode = self.sample_quantity_mode()
         sample_count = self.sample_count_per_feature()
-        uses_centroid = sample_count == 1
+        density_value = self.sample_density_hectares()
+        uses_density = quantity_mode == 'area_density'
+        uses_centroid = (not uses_density) and sample_count == 1
 
+        self.samples_per_feature_label.setEnabled(not uses_density)
+        self.samples_per_feature_spinbox.setEnabled(not uses_density)
+        self.sample_density_label.setEnabled(uses_density)
+        self.sample_density_spinbox.setEnabled(uses_density)
         self.sample_distribution_label.setEnabled(not uses_centroid)
         self.sample_distribution_combo.setEnabled(not uses_centroid)
 
-        if uses_centroid:
+        if uses_density:
+            method = self.sample_distribution_method()
+            density_text = self._format_density_value(density_value)
+            if method == 'systematic_grid':
+                hint_text = self._t(
+                    'Generates the mark count from feature area using 1 mark per {} ha. Features that resolve to 1 mark use the centroid automatically; larger features follow a regular internal grid.'.format(density_text),
+                    'Gera a quantidade de marcações pela área da feição usando 1 marcação a cada {} ha. Feições que resultam em 1 marcação usam o centroide automaticamente; feições maiores seguem uma grade interna regular.'.format(density_text),
+                )
+            elif method == 'zigzag_transect':
+                hint_text = self._t(
+                    'Generates the mark count from feature area using 1 mark per {} ha. Features that resolve to 1 mark use the centroid automatically; larger features follow a zigzag field transect.'.format(density_text),
+                    'Gera a quantidade de marcações pela área da feição usando 1 marcação a cada {} ha. Feições que resultam em 1 marcação usam o centroide automaticamente; feições maiores seguem um transecto em zig-zag.'.format(density_text),
+                )
+            else:
+                hint_text = self._t(
+                    'Generates the mark count from feature area using 1 mark per {} ha. Features that resolve to 1 mark use the centroid automatically; larger features maximize internal spacing.'.format(density_text),
+                    'Gera a quantidade de marcações pela área da feição usando 1 marcação a cada {} ha. Feições que resultam em 1 marcação usam o centroide automaticamente; feições maiores maximizam o espaçamento interno.'.format(density_text),
+                )
+            self.sample_distribution_hint_label.setText(hint_text)
+            self.mark_layer_centroids_button.setText(
+                self._t('Mark feature samples by density', 'Marcar amostras por densidade')
+            )
+        elif uses_centroid:
             self.sample_distribution_hint_label.setText(
                 self._t(
                     'One mark per feature uses the polygon centroid, matching the current behavior.',
@@ -1080,6 +1173,8 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         self.delete_selected_mark_button.setEnabled(has_selected_point)
         self.clear_marks_button.setEnabled(has_points)
         self.export_csv_button.setEnabled(has_points)
+        self.export_gpx_button.setEnabled(has_points)
+        self.add_temp_layer_button.setEnabled(has_points)
         self.generate_pfd_button.setEnabled(has_points)
         self.route_all_points_button.setEnabled(has_route)
 
