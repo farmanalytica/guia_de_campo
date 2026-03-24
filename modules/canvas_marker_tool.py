@@ -97,7 +97,37 @@ class CanvasMarkerTool(QtCore.QObject):
         map_point = transform.transform(QgsPointXY(longitude, latitude))
         self._store_coordinate_with_visuals(map_point, longitude, latitude)
 
-    def _store_coordinate_with_visuals(self, map_point, longitude, latitude):
+    def add_wgs84_points(self, lat_lon_pairs):
+        """Add multiple WGS84 points while emitting only one UI refresh."""
+        lat_lon_pairs = list(lat_lon_pairs)
+        if not lat_lon_pairs:
+            return 0
+
+        destination_crs = self.canvas.mapSettings().destinationCrs()
+        transform = QgsCoordinateTransform(self._wgs84, destination_crs, QgsProject.instance())
+
+        for latitude, longitude in lat_lon_pairs:
+            map_point = transform.transform(QgsPointXY(longitude, latitude))
+            self._store_coordinate_with_visuals(
+                map_point,
+                longitude,
+                latitude,
+                emit_signal=False,
+                show_message=False,
+            )
+
+        self.canvas.refresh()
+        self.coordinates_changed.emit(list(self.coordinates))
+        return len(lat_lon_pairs)
+
+    def _store_coordinate_with_visuals(
+        self,
+        map_point,
+        longitude,
+        latitude,
+        emit_signal=True,
+        show_message=True,
+    ):
         """Persist WGS84 tuple, draw marker/label, and show capture feedback."""
         self.coordinates.append((longitude, latitude))
 
@@ -130,23 +160,31 @@ class CanvasMarkerTool(QtCore.QObject):
         label_item = QgsMapCanvasAnnotationItem(annotation, self.canvas)
         self._label_items.append(label_item)
 
-        self.iface.messageBar().pushMessage(
-            self._t("Field Guide", "Field Guide"),
-            self._t(
-                "Point {} saved in WGS84: ({:.6f}, {:.6f})".format(
-                    len(self.coordinates), longitude, latitude
+        if show_message:
+            self.iface.messageBar().pushMessage(
+                self._t("Field Guide", "Field Guide"),
+                self._t(
+                    "Point {} saved in WGS84: ({:.6f}, {:.6f})".format(
+                        len(self.coordinates), longitude, latitude
+                    ),
+                    "Ponto {} salvo em WGS84: ({:.6f}, {:.6f})".format(
+                        len(self.coordinates), longitude, latitude
+                    ),
                 ),
-                "Ponto {} salvo em WGS84: ({:.6f}, {:.6f})".format(
-                    len(self.coordinates), longitude, latitude
-                ),
-            ),
-            level=Qgis.Success,
-            duration=2,
-        )
-        self.coordinates_changed.emit(list(self.coordinates))
+                level=Qgis.Success,
+                duration=2,
+            )
+        if emit_signal:
+            self.coordinates_changed.emit(list(self.coordinates))
 
     def clear(self):
         """Remove all marker graphics and reset captured coordinates."""
+        self._clear_visuals()
+        self.coordinates = []
+        self.coordinates_changed.emit(list(self.coordinates))
+
+    def _clear_visuals(self):
+        """Remove all marker and label graphics from the map canvas."""
         for marker in self._markers:
             self.canvas.scene().removeItem(marker)
 
@@ -155,8 +193,6 @@ class CanvasMarkerTool(QtCore.QObject):
 
         self._markers = []
         self._label_items = []
-        self.coordinates = []
-        self.coordinates_changed.emit(list(self.coordinates))
 
     def remove_last(self):
         """Remove only the most recently added mark and coordinate."""
@@ -174,4 +210,24 @@ class CanvasMarkerTool(QtCore.QObject):
             self.canvas.scene().removeItem(label_item)
 
         self.coordinates_changed.emit(list(self.coordinates))
+        return True
+
+    def remove_at(self, index):
+        """Remove a point by index and rebuild labels so numbering stays contiguous."""
+        if index < 0 or index >= len(self.coordinates):
+            return False
+
+        remaining_points = [
+            (latitude, longitude)
+            for point_index, (longitude, latitude) in enumerate(self.coordinates)
+            if point_index != index
+        ]
+
+        self._clear_visuals()
+        self.coordinates = []
+
+        if remaining_points:
+            self.add_wgs84_points(remaining_points)
+        else:
+            self.coordinates_changed.emit(list(self.coordinates))
         return True

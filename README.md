@@ -1,135 +1,123 @@
-# FieldGuide (QGIS Plugin)
+# Field Guide 2.0
 
-Plugin for capturing map points, storing WGS84 coordinates, and providing automation for field workflows.
+Field Guide is a QGIS plugin for map point capture, polygon-based sampling, CSV exchange, Google Maps route opening, and mobile-friendly PDF field reports.
 
-## Developer Instructions
+Version 2.0 expands the plugin from point capture into a fuller field workflow with polygon feature sampling, selected-mark deletion, and improved spatial distribution methods.
 
-## Project Structure
+## Highlights
 
-- `__init__.py`: QGIS plugin entrypoint (`classFactory`).
-- `guia_de_campo.py`: plugin lifecycle (menu, toolbar, window startup).
-- `guia_de_campo_dialog.py`: main UI built in code (no `.ui` dependency).
-- `guia_de_campo_service.py`: service layer connecting UI events to business rules.
-- `modules/canvas_marker_tool.py`: canvas click capture, visual markers, numeric labels, and WGS84 coordinates.
-- `modules/map_tools.py`: map utilities (for example, adding Google Hybrid layer).
-- `modules/pdf/composer.py`: PDF generation orchestration without concentrating rules in a single file.
-- `modules/pdf/canvas_snapshot.py`: captures current canvas view for PDF insertion.
-- `modules/pdf/links.py`: generates Google Maps links per point and per route (origin + stops + destination).
-- `modules/pdf/html_template.py`: HTML template with route cards and mobile-friendly point list.
-- `modules/pdf/writer.py`: PDF writing using native Qt (`QPrinter` + `QTextDocument`).
-- `resources.py` / `resources.qrc`: Qt resources (icon and related assets).
-- `metadata.txt`: metadata required by QGIS Plugin Manager.
+- Capture points directly on the map with numbered markers and WGS84 storage.
+- Delete a selected mark from the session list, remove the last mark, or clear the full session.
+- Add manual WGS84 coordinates with validation.
+- Export and import CSV point lists.
+- Open ordered Google Maps routes with automatic chunking for longer sessions.
+- Generate PDF reports with canvas snapshot, route links, and per-point mobile links.
+- Generate marks inside polygon features with `1` to `10` marks per feature.
 
-## Runtime Requirements
+## Sampling In 2.0
 
-- QGIS LTR 3.x with embedded Python.
-- Must run inside QGIS environment (`qgis.*` imports do not resolve in an external Python interpreter).
+Field Guide 2.0 adds polygon feature sampling for field and soil workflows.
 
-## Local Dev Setup (Windows)
+- `1` mark per feature uses the feature centroid.
+- `2` to `10` marks per feature can use:
+  - `Spread optimized`
+  - `Systematic grid`
+  - `Zigzag transect`
 
-1. Clone or copy the plugin to the QGIS profile plugins folder.
-2. Common path on Windows:
-	 `C:\Users\<usuario>\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\fieldguide`
-3. Restart QGIS or use Plugin Reloader to reload during development.
-4. Enable the plugin in `Plugins > Manage and Install Plugins`.
+These methods were tuned to improve internal spacing, respect feature shape, and produce more practical field layouts.
 
-## Feature Overview
+## Main Features
 
-### Mark points on the map
+### Capture points on the map
 
 1. Open the plugin.
-2. Enable `Mark on map (multiple clicks)`.
-3. Click the canvas to add points.
-4. Each point:
-	 - creates a visual marker;
-	 - creates an incremental numeric label with good contrast;
-	 - stores WGS84 coordinates (`EPSG:4326`).
+2. Enable capture mode.
+3. Click the map to add points.
+4. Each point is stored in WGS84 and shown with marker + numeric label.
 
-### Clear marks
+### Manage the live session
 
-- `Clear marks` button removes markers, labels, and stored coordinates.
-
-### Remove last mark
-
-- `Remove last mark` button undoes only the last added point.
-- Keeps all previous points on the map and in the coordinate list.
+- `Delete selected mark` removes the selected entry from the session list.
+- `Remove last mark` removes only the most recent mark.
+- `Clear marks` removes all markers, labels, and stored coordinates.
 
 ### Add coordinates manually
 
-1. Fill `Latitude` and `Longitude` in the `Add manual coordinate (WGS84)` section.
+1. Fill in `Latitude` and `Longitude`.
 2. Click `Add coordinate`.
-3. The plugin validates decimal format and WGS84 limits:
-	- latitude between -90 and 90;
-	- longitude between -180 and 180.
-4. When valid, the point is added with marker and numbering on the map, same as click-based points.
-5. When invalid, the point is blocked and a warning message is displayed.
+3. The plugin validates:
+   - latitude between `-90` and `90`
+   - longitude between `-180` and `180`
 
-### Export points to CSV
+### Generate marks from polygon features
 
-- `Export points CSV` button saves current points to a `.csv` file.
-- Initial save path opens in system Downloads folder (when available).
-- Exported structure:
-	- `order`: point capture sequence;
-	- `longitude`: WGS84 decimal coordinate;
-	- `latitude`: WGS84 decimal coordinate.
-- Export runs only when at least 1 point exists.
+1. Select a polygon layer in the `Capture` section.
+2. Choose the number of marks per feature from `1` to `10`.
+3. For `1`, the plugin uses the centroid.
+4. For values above `1`, choose one distribution method:
+   - `Spread optimized`: stronger spatial spread inside irregular polygons.
+   - `Systematic grid`: more even, orientation-aware spacing.
+   - `Zigzag transect`: field-style serpentine pattern guided by feature size and shape.
+5. Append to or replace the current session list.
 
-### Import points from CSV
+### CSV import/export
 
-- `Import points CSV` button loads points from a `.csv` file.
-- CSV must contain a header with `longitude` and `latitude` columns.
-- Plugin accepts decimal values with `.` or `,`.
-- Import validations:
-	- latitude between -90 and 90;
-	- longitude between -180 and 180.
-- Invalid rows are skipped and the plugin shows a summary with imported points and ignored rows.
-- Valid imported points are drawn on the map with sequential numbering, same as click-captured points.
+- Exported CSV columns:
+  - `order`
+  - `longitude`
+  - `latitude`
+- Import expects `longitude` and `latitude` headers.
+- Decimal values with `.` or `,` are accepted.
 
-### Generate PDF
+### PDF generation
 
-- `Generate PDF` button opens file picker to save the report.
-- Initial save path opens in system Downloads folder (when available).
-- PDF includes:
-	- screenshot of current canvas view (with visible marks);
-	- Google Maps route link(s) using points in capture order;
-	- numbered WGS84 points list;
-	- large tappable per-point Google Maps links (`https://maps.google.com/?q=lat,lon`) optimized for mobile usage.
-- Internal method may still keep the name `generate_pfd` for integration compatibility, but functionality is real PDF generation.
+The generated PDF includes:
 
-### Open route in Google Maps
+- current canvas snapshot
+- Google Maps route links
+- numbered point list
+- large per-point mobile links
 
-- `Open route in Google Maps` button opens navigation with all points as stops, preserving capture order.
-- For many points, plugin automatically splits route into segments to avoid URL/stop-limit opening failures.
+### Google Maps route opening
 
-### Practical route limits (Google Maps)
+- Opens all captured points as ordered stops.
+- Splits longer routes into smaller chunks for better compatibility.
 
-- Common mobile flow: up to around 9 intermediate stops per URL (with origin and destination).
-- Common desktop/web flow: may support more stops, but depends on client and URL length.
-- Plugin strategy: automatic segmentation into route chunks for reliability across devices.
+## Project Structure
 
-### Google Hybrid layer
+- `__init__.py`: plugin entrypoint.
+- `guia_de_campo.py`: lifecycle and QGIS integration.
+- `guia_de_campo_dialog.py`: main UI.
+- `guia_de_campo_service.py`: actions, validation, sampling, routes, and export logic.
+- `modules/canvas_marker_tool.py`: canvas markers, labels, and point state.
+- `modules/map_tools.py`: map utility helpers.
+- `modules/pdf/`: PDF generation pipeline.
+- `metadata.txt`: QGIS Plugin Manager metadata.
 
-- `Add Google Hybrid` button calls `hybrid_function` in `modules/map_tools.py`.
+## Runtime Requirements
 
-## Development Notes
+- QGIS 3.x with embedded Python.
+- Must run inside the QGIS environment.
 
-- Prefer keeping map logic in `modules/` and using `guia_de_campo_service.py` as orchestrator.
-- For new UI actions:
-	1. add control in dialog;
-	2. add method in service;
-	3. connect signal in `run()` of `guia_de_campo.py` (only once).
-- Avoid coupling heavy logic directly in dialog class.
+## Local Development
 
-## Debugging
+1. Copy or clone the plugin into the QGIS plugins directory.
+2. Common Windows path:
+   `C:\Users\<usuario>\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\fieldguide`
+3. Restart QGIS or use Plugin Reloader.
+4. Enable the plugin from `Plugins > Manage and Install Plugins`.
 
-- Use QGIS `Python Console` to inspect `print` outputs.
-- User-facing flow messages should use `iface.messageBar().pushMessage(...)`.
-- If plugin fails to load, check:
-	- imports in `modules/`;
-	- Python indentation errors;
-	- stack trace in QGIS error panel.
+## Changelog
 
-## Suggested Next Improvements
+### 2.0
 
-- Support other exchange formats beyond CSV (for example, GeoJSON).
-- Add basic tests for transformation and state cleanup functions.
+- Added polygon feature sampling with configurable marks per feature.
+- Added centroid, spread-optimized, systematic grid, and zigzag transect methods.
+- Added selected-mark deletion from the session list.
+- Improved spatial distribution behavior for zigzag and grid sampling.
+- Refined Portuguese UI wording.
+- Updated documentation, metadata, and website content.
+
+### 1.0
+
+- Initial release with point capture, CSV import/export, route opening, and PDF generation.

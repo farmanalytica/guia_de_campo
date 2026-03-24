@@ -88,6 +88,7 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         super(GuiaDeCampoDialog, self).__init__(parent)
         self.plugin_language = plugin_language
         self._refreshing_stylesheet = False
+        self._current_point_count = 0
 
         self.setWindowTitle(self._t('Field Guide', 'Field Guide'))
         self.setWindowFlag(_qt_enum('WindowType', 'WindowStaysOnTopHint', 'WindowStaysOnTopHint'), True)
@@ -122,7 +123,13 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         layout.addStretch(1)
 
         self.mark_on_canvas_checkbox.toggled.connect(self.update_capture_status)
+        self.centroid_layer_combo.currentIndexChanged.connect(self._update_centroid_action_state)
+        self.samples_per_feature_spinbox.valueChanged.connect(self._update_sampling_controls)
+        self.sample_distribution_combo.currentIndexChanged.connect(self._update_sampling_controls)
+        self.points_list_widget.itemSelectionChanged.connect(self._on_points_selection_changed)
         self.update_capture_status(self.mark_on_canvas_checkbox.isChecked())
+        self.set_polygon_layers([])
+        self._update_sampling_controls()
         self.set_points([])
 
     def _build_stylesheet(self):
@@ -291,6 +298,16 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
                 'background-color: {};'.format(_color_to_hex(_blend_colors(base, warning, 0.28 if is_dark else 0.16))),
             ),
             _css_block(
+                'QPushButton#deleteSelectedButton',
+                'background-color: {};'.format(_color_to_hex(_blend_colors(base, info, 0.16 if is_dark else 0.10))),
+                'border: 1px solid {};'.format(_color_to_hex(_blend_colors(panel_border, info, 0.50))),
+                'color: {};'.format(_color_to_hex(text)),
+            ),
+            _css_block(
+                'QPushButton#deleteSelectedButton:hover',
+                'background-color: {};'.format(_color_to_hex(_blend_colors(base, info, 0.26 if is_dark else 0.16))),
+            ),
+            _css_block(
                 'QPushButton#csvExportButton',
                 'background-color: {};'.format(_color_to_hex(_blend_colors(base, success, 0.16 if is_dark else 0.09))),
                 'border: 1px solid {};'.format(_color_to_hex(_blend_colors(panel_border, success, 0.46))),
@@ -335,6 +352,16 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
                 'background-color: {};'.format(_color_to_hex(_blend_colors(base, info, 0.26 if is_dark else 0.16))),
             ),
             _css_block(
+                'QPushButton#centroidButton',
+                'background-color: {};'.format(_color_to_hex(_blend_colors(base, info, 0.18 if is_dark else 0.11))),
+                'border: 1px solid {};'.format(_color_to_hex(_blend_colors(panel_border, info, 0.52))),
+                'color: {};'.format(_color_to_hex(text)),
+            ),
+            _css_block(
+                'QPushButton#centroidButton:hover',
+                'background-color: {};'.format(_color_to_hex(_blend_colors(base, info, 0.28 if is_dark else 0.17))),
+            ),
+            _css_block(
                 'QCheckBox',
                 'spacing: 6px;',
                 'color: {};'.format(_color_to_hex(text)),
@@ -372,6 +399,51 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
                 'selection-color: {};'.format(_color_to_hex(highlighted_text)),
             ),
             _css_block('QLineEdit:focus', 'border: 1px solid {};'.format(_color_to_hex(highlight))),
+            _css_block(
+                'QComboBox',
+                'min-height: 30px;',
+                'border: 1px solid {};'.format(_color_to_hex(panel_border)),
+                'border-radius: 8px;',
+                'padding: 4px 8px;',
+                'background: {};'.format(_color_to_hex(input_bg)),
+                'color: {};'.format(_color_to_hex(text)),
+                'selection-background-color: {};'.format(_color_to_hex(highlight)),
+                'selection-color: {};'.format(_color_to_hex(highlighted_text)),
+            ),
+            _css_block('QComboBox:focus', 'border: 1px solid {};'.format(_color_to_hex(highlight))),
+            _css_block(
+                'QComboBox:disabled',
+                'background: {};'.format(_color_to_hex(panel_bg)),
+                'color: {};'.format(_color_to_hex(subtle_text)),
+                'border-color: {};'.format(_color_to_hex(separator)),
+            ),
+            _css_block('QComboBox::drop-down', 'border: none;', 'width: 24px;'),
+            _css_block(
+                'QComboBox QAbstractItemView',
+                'border: 1px solid {};'.format(_color_to_hex(panel_border)),
+                'background: {};'.format(_color_to_hex(list_bg)),
+                'color: {};'.format(_color_to_hex(text)),
+                'selection-background-color: {};'.format(_color_to_hex(highlight)),
+                'selection-color: {};'.format(_color_to_hex(highlighted_text)),
+            ),
+            _css_block(
+                'QSpinBox',
+                'min-height: 30px;',
+                'border: 1px solid {};'.format(_color_to_hex(panel_border)),
+                'border-radius: 8px;',
+                'padding: 4px 8px;',
+                'background: {};'.format(_color_to_hex(input_bg)),
+                'color: {};'.format(_color_to_hex(text)),
+                'selection-background-color: {};'.format(_color_to_hex(highlight)),
+                'selection-color: {};'.format(_color_to_hex(highlighted_text)),
+            ),
+            _css_block('QSpinBox:focus', 'border: 1px solid {};'.format(_color_to_hex(highlight))),
+            _css_block(
+                'QSpinBox:disabled',
+                'background: {};'.format(_color_to_hex(panel_bg)),
+                'color: {};'.format(_color_to_hex(subtle_text)),
+                'border-color: {};'.format(_color_to_hex(separator)),
+            ),
             _css_block(
                 'QListWidget',
                 'border: 1px solid {};'.format(_color_to_hex(panel_border)),
@@ -429,8 +501,8 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
 
         description = QtWidgets.QLabel(
             self._t(
-                'Capture points on the map, review them in a live list, and export routes or PDF outputs when ready.',
-                'Capture pontos no mapa, acompanhe a lista em tempo real e exporte rotas ou PDFs quando estiver pronto.',
+                'Capture points on the map, mark centroids from project layers, review them in a live list, and export routes or PDF outputs when ready.',
+                'Capture pontos no mapa, marque centroides de camadas do projeto, acompanhe a lista em tempo real e exporte rotas ou PDFs quando estiver pronto.',
             ),
             self,
         )
@@ -477,8 +549,8 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
 
         capture_hint = QtWidgets.QLabel(
             self._t(
-                'Use this when you want to collect multiple points directly from the canvas.',
-                'Use quando quiser coletar varios pontos diretamente no mapa.',
+                'Use direct map clicks for field capture, or select a polygon layer below to generate marks inside each feature.',
+                'Use cliques diretos no mapa para coleta em campo, ou selecione uma camada poligonal abaixo para gerar marcações dentro de cada feição.',
             ),
             self,
         )
@@ -492,12 +564,81 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         )
         self.hybrid_layer_button.setObjectName('hybridButton')
         capture_layout.addWidget(self.hybrid_layer_button)
+
+        centroid_separator = QtWidgets.QFrame(self)
+        centroid_separator.setObjectName('lineSeparator')
+        centroid_separator.setFrameShape(_widget_enum(QtWidgets.QFrame, 'Shape', 'HLine', 'HLine'))
+        capture_layout.addWidget(centroid_separator)
+
+        self.centroid_layer_hint_label = QtWidgets.QLabel(self)
+        self.centroid_layer_hint_label.setObjectName('sectionHintLabel')
+        self.centroid_layer_hint_label.setWordWrap(True)
+        capture_layout.addWidget(self.centroid_layer_hint_label)
+
+        centroid_layer_row = QtWidgets.QHBoxLayout()
+        centroid_layer_row.setSpacing(8)
+        centroid_layer_row.addWidget(
+            QtWidgets.QLabel(self._t('Polygon layer', 'Camada poligonal'), self)
+        )
+
+        self.centroid_layer_combo = QtWidgets.QComboBox(self)
+        self.centroid_layer_combo.setMinimumContentsLength(18)
+        centroid_layer_row.addWidget(self.centroid_layer_combo, 1)
+        capture_layout.addLayout(centroid_layer_row)
+
+        sampling_settings_layout = QtWidgets.QGridLayout()
+        sampling_settings_layout.setHorizontalSpacing(8)
+        sampling_settings_layout.setVerticalSpacing(6)
+
+        sampling_settings_layout.addWidget(
+            QtWidgets.QLabel(self._t('Marks per feature', 'Marcações por feição'), self),
+            0,
+            0,
+        )
+        self.samples_per_feature_spinbox = QtWidgets.QSpinBox(self)
+        self.samples_per_feature_spinbox.setRange(1, 10)
+        self.samples_per_feature_spinbox.setValue(1)
+        sampling_settings_layout.addWidget(self.samples_per_feature_spinbox, 0, 1)
+
+        self.sample_distribution_label = QtWidgets.QLabel(
+            self._t('Distribution method', 'Método de distribuição'),
+            self,
+        )
+        sampling_settings_layout.addWidget(self.sample_distribution_label, 1, 0)
+
+        self.sample_distribution_combo = QtWidgets.QComboBox(self)
+        self.sample_distribution_combo.addItem(
+            self._t('Spread optimized', 'Otimizado por distribuição'),
+            'spread_optimized',
+        )
+        self.sample_distribution_combo.addItem(
+            self._t('Systematic grid', 'Grade sistemática'),
+            'systematic_grid',
+        )
+        self.sample_distribution_combo.addItem(
+            self._t('Zigzag transect', 'Transecto em zig-zag'),
+            'zigzag_transect',
+        )
+        sampling_settings_layout.addWidget(self.sample_distribution_combo, 1, 1)
+        capture_layout.addLayout(sampling_settings_layout)
+
+        self.sample_distribution_hint_label = QtWidgets.QLabel(self)
+        self.sample_distribution_hint_label.setObjectName('sectionHintLabel')
+        self.sample_distribution_hint_label.setWordWrap(True)
+        capture_layout.addWidget(self.sample_distribution_hint_label)
+
+        self.mark_layer_centroids_button = QtWidgets.QPushButton(
+            self._t('Mark feature centroids', 'Marcar centroides das feições'),
+            self,
+        )
+        self.mark_layer_centroids_button.setObjectName('centroidButton')
+        capture_layout.addWidget(self.mark_layer_centroids_button)
         layout.addWidget(capture_group)
 
     def _build_state_group(self, layout):
         """Build session state section."""
         state_group = QtWidgets.QGroupBox(
-            self._t('Session State', 'Estado da Sessao'),
+            self._t('Session State', 'Estado da Sessão'),
             self,
         )
         state_layout = QtWidgets.QVBoxLayout(state_group)
@@ -512,7 +653,7 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         self.point_count_value_label = QtWidgets.QLabel('0', self)
         summary_grid.addWidget(self.point_count_value_label, 0, 1)
 
-        summary_grid.addWidget(QtWidgets.QLabel(self._t('Last point', 'Ultimo ponto'), self), 1, 0)
+        summary_grid.addWidget(QtWidgets.QLabel(self._t('Last point', 'Último ponto'), self), 1, 0)
         self.last_point_value_label = QtWidgets.QLabel(
             self._t('No points yet', 'Nenhum ponto ainda'),
             self,
@@ -556,14 +697,21 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         session_actions_layout.setSpacing(8)
 
         self.remove_last_mark_button = QtWidgets.QPushButton(
-            self._t('Remove last mark', 'Remover ultima marcacao'),
+            self._t('Remove last mark', 'Remover última marcação'),
             self,
         )
         self.remove_last_mark_button.setObjectName('removeLastButton')
         session_actions_layout.addWidget(self.remove_last_mark_button)
 
+        self.delete_selected_mark_button = QtWidgets.QPushButton(
+            self._t('Delete selected mark', 'Excluir marcação selecionada'),
+            self,
+        )
+        self.delete_selected_mark_button.setObjectName('deleteSelectedButton')
+        session_actions_layout.addWidget(self.delete_selected_mark_button)
+
         self.clear_marks_button = QtWidgets.QPushButton(
-            self._t('Clear marks', 'Limpar marcacoes'),
+            self._t('Clear marks', 'Limpar marcações'),
             self,
         )
         self.clear_marks_button.setObjectName('clearButton')
@@ -649,7 +797,7 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
     def _build_output_group(self, layout):
         """Build import, export, and report section."""
         output_group = QtWidgets.QGroupBox(
-            self._t('Import / Export', 'Importacao / Exportacao'),
+            self._t('Import / Export', 'Importação / Exportação'),
             self,
         )
         output_layout = QtWidgets.QVBoxLayout(output_group)
@@ -659,7 +807,7 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         output_hint = QtWidgets.QLabel(
             self._t(
                 'Import coordinates from CSV, export the current session, or generate the field PDF report.',
-                'Importe coordenadas de CSV, exporte a sessao atual ou gere o PDF de campo.',
+                'Importe coordenadas de CSV, exporte a sessão atual ou gere o PDF de campo.',
             ),
             self,
         )
@@ -732,7 +880,7 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         project_note.setText(
             self._t(
                 'This is a free and open project, developed with support from <a href="https://farmanalytica.com.br">FARM Analytica</a>. Ask about exclusive custom commercial solutions.',
-                'Este e um projeto gratis e aberto, desenvolvido com o apoio da <a href="https://farmanalytica.com.br">FARM Analytica</a>. Fale conosco sobre solucoes comerciais exclusivas e personalizadas.',
+                'Este é um projeto gratuito e aberto, desenvolvido com o apoio da <a href="https://farmanalytica.com.br">FARM Analytica</a>. Fale conosco sobre soluções comerciais exclusivas e personalizadas.',
             )
         )
         project_note.setTextFormat(_qt_enum('TextFormat', 'RichText', 'RichText'))
@@ -752,19 +900,120 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
         self.capture_status_badge.style().unpolish(self.capture_status_badge)
         self.capture_status_badge.style().polish(self.capture_status_badge)
 
+    def set_polygon_layers(self, layer_options, selected_layer_id=None):
+        """Populate the polygon-layer selector from current project layers."""
+        if selected_layer_id is None:
+            selected_layer_id = self.centroid_layer_combo.currentData()
+
+        self.centroid_layer_combo.blockSignals(True)
+        self.centroid_layer_combo.clear()
+
+        if layer_options:
+            for layer_name, layer_id in layer_options:
+                self.centroid_layer_combo.addItem(layer_name, layer_id)
+
+            selected_index = self.centroid_layer_combo.findData(selected_layer_id)
+            if selected_index < 0:
+                selected_index = 0
+            self.centroid_layer_combo.setCurrentIndex(selected_index)
+            self.centroid_layer_hint_label.setText(
+                self._t(
+                    'Select a polygon layer from the current project and generate marks inside each feature.',
+                    'Selecione uma camada poligonal do projeto atual e gere marcações dentro de cada feição.',
+                )
+            )
+        else:
+            self.centroid_layer_combo.addItem(
+                self._t('No polygon layers available', 'Nenhuma camada poligonal disponivel'),
+                None,
+            )
+            self.centroid_layer_combo.setCurrentIndex(0)
+            self.centroid_layer_hint_label.setText(
+                self._t(
+                    'Add a polygon or multipolygon vector layer to the project to enable centroid marking.',
+                    'Adicione uma camada vetorial poligonal ou multipoligonal ao projeto para habilitar a marcação de centroides.',
+                )
+            )
+
+        self.centroid_layer_combo.blockSignals(False)
+        self._update_centroid_action_state()
+
+    def _update_centroid_action_state(self):
+        """Enable centroid action only when a valid project layer is selected."""
+        selected_layer_id = self.centroid_layer_combo.currentData()
+        self.mark_layer_centroids_button.setEnabled(bool(selected_layer_id))
+
+    def sample_count_per_feature(self):
+        """Return the requested number of marks per polygon feature."""
+        return max(1, min(10, int(self.samples_per_feature_spinbox.value())))
+
+    def sample_distribution_method(self):
+        """Return the selected multi-point distribution method."""
+        method = self.sample_distribution_combo.currentData()
+        if not method:
+            return 'spread_optimized'
+        return method
+
+    def _update_sampling_controls(self):
+        """Refresh polygon sampling hints and control states."""
+        sample_count = self.sample_count_per_feature()
+        uses_centroid = sample_count == 1
+
+        self.sample_distribution_label.setEnabled(not uses_centroid)
+        self.sample_distribution_combo.setEnabled(not uses_centroid)
+
+        if uses_centroid:
+            self.sample_distribution_hint_label.setText(
+                self._t(
+                    'One mark per feature uses the polygon centroid, matching the current behavior.',
+                    'Uma marcação por feição usa o centroide do polígono, mantendo o comportamento atual.',
+                )
+            )
+            self.mark_layer_centroids_button.setText(
+                self._t('Mark feature centroids', 'Marcar centroides das feições')
+            )
+        else:
+            method = self.sample_distribution_method()
+            if method == 'systematic_grid':
+                hint_text = self._t(
+                    'Places marks from a regular grid clipped to each polygon. Good for balanced field coverage and repeatable spacing.',
+                    'Posiciona marcações a partir de uma grade regular recortada ao polígono. Bom para cobertura equilibrada e espaçamento repetível.',
+                )
+            elif method == 'zigzag_transect':
+                hint_text = self._t(
+                    'Builds a serpentine walk pattern across each polygon, similar to common zigzag soil sampling in the field.',
+                    'Monta um percurso serpenteado em cada polígono, semelhante ao zigue-zague comum na amostragem de solo em campo.',
+                )
+            else:
+                hint_text = self._t(
+                    'Chooses marks that maximize spacing inside each polygon. Good default for irregular areas and strong spatial distribution.',
+                    'Escolhe marcações que maximizam o espaçamento dentro de cada polígono. Bom padrão para áreas irregulares e boa distribuição espacial.',
+                )
+            self.sample_distribution_hint_label.setText(hint_text)
+            self.mark_layer_centroids_button.setText(
+                self._t('Mark feature samples', 'Marcar amostras por feição')
+            )
+
+        self._update_centroid_action_state()
+
     def set_points(self, coordinates):
         """Refresh the session summary and point list widgets."""
         coordinates = list(coordinates)
         point_count = len(coordinates)
+        self._current_point_count = point_count
         self.point_count_value_label.setText(str(point_count))
 
         self.points_list_widget.clear()
         if point_count == 0:
             empty_text = self._t(
-                'No points captured yet. Turn on capture mode or add coordinates manually.',
-                'Nenhum ponto capturado ainda. Ative o modo de captura ou adicione coordenadas manualmente.',
+                'No points captured yet. Turn on capture mode, mark layer centroids, or add coordinates manually.',
+                'Nenhum ponto capturado ainda. Ative o modo de captura, marque centroides de camada ou adicione coordenadas manualmente.',
             )
-            self.points_list_widget.addItem(empty_text)
+            empty_item = QtWidgets.QListWidgetItem(empty_text)
+            empty_item.setFlags(
+                empty_item.flags() & ~_qt_enum('ItemFlag', 'ItemIsSelectable', 'ItemIsSelectable')
+            )
+            self.points_list_widget.addItem(empty_item)
             self.points_list_widget.clearSelection()
             self.points_list_widget.setEnabled(True)
             self.last_point_value_label.setText(self._t('No points yet', 'Nenhum ponto ainda'))
@@ -793,11 +1042,42 @@ class GuiaDeCampoDialog(QtWidgets.QDialog):
 
         self._update_action_states(point_count)
 
+    def selected_point_index(self):
+        """Return the selected point index from the live session list, if any."""
+        if self._current_point_count <= 0:
+            return -1
+
+        selected_indexes = self.points_list_widget.selectedIndexes()
+        if not selected_indexes:
+            return -1
+
+        selected_row = selected_indexes[0].row()
+        if selected_row < 0 or selected_row >= self._current_point_count:
+            return -1
+        return selected_row
+
+    def select_point_index(self, index):
+        """Select a point row when it exists, otherwise clear the list selection."""
+        if index < 0 or index >= self._current_point_count:
+            self.points_list_widget.clearSelection()
+            self.points_list_widget.setCurrentRow(-1)
+            self._update_action_states(self._current_point_count)
+            return
+
+        self.points_list_widget.setCurrentRow(index)
+        self._update_action_states(self._current_point_count)
+
+    def _on_points_selection_changed(self):
+        """Keep selection-dependent actions synced with the list widget state."""
+        self._update_action_states(self._current_point_count)
+
     def _update_action_states(self, point_count):
         """Enable only actions that are valid for the current session state."""
         has_points = point_count > 0
         has_route = point_count >= 2
+        has_selected_point = self.selected_point_index() >= 0
         self.remove_last_mark_button.setEnabled(has_points)
+        self.delete_selected_mark_button.setEnabled(has_selected_point)
         self.clear_marks_button.setEnabled(has_points)
         self.export_csv_button.setEnabled(has_points)
         self.generate_pfd_button.setEnabled(has_points)

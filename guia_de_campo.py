@@ -213,6 +213,9 @@ class GuiaDeCampo:
             self.dlg.hybrid_layer_button.clicked.connect(
                 self.service.add_hybrid_layer
             )
+            self.dlg.mark_layer_centroids_button.clicked.connect(
+                self.service.mark_selected_layer_centroids
+            )
             self.dlg.route_all_points_button.clicked.connect(
                 self.service.open_all_points_route
             )
@@ -221,6 +224,9 @@ class GuiaDeCampo:
             )
             self.dlg.remove_last_mark_button.clicked.connect(
                 self.service.remove_last_mark
+            )
+            self.dlg.delete_selected_mark_button.clicked.connect(
+                self.service.remove_selected_mark
             )
             self.dlg.generate_pfd_button.clicked.connect(
                 self.service.generate_pfd
@@ -244,6 +250,8 @@ class GuiaDeCampo:
                 lambda _: self.dlg.mark_on_canvas_checkbox.setChecked(False)
             )
             self.dlg.finished.connect(lambda _: self.service.disable_mark_mode())
+
+        self.service.refresh_polygon_layers()
 
         # Keep dialog modeless so user can interact with map canvas while open.
         self.dlg.show()

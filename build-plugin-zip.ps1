@@ -13,16 +13,16 @@ $StageRoot = Join-Path $TempRoot $PluginFolderName
 $ZipName = "$PluginFolderName.zip"
 $ZipPath = Join-Path $OutputPath $ZipName
 
-$excludePatterns = @(
-    ".git*",
-    ".vscode",
-    ".idea",
-    ".build_tmp",
-    "dist",
-    "__pycache__",
-    "*.pyc",
-    "*.pyo",
-    "*.zip"
+$runtimeItems = @(
+    "__init__.py",
+    "guia_de_campo.py",
+    "guia_de_campo_dialog.py",
+    "guia_de_campo_service.py",
+    "metadata.txt",
+    "resources.py",
+    "icon.png",
+    "farm_icon.png",
+    "modules"
 )
 
 if (Test-Path $TempRoot) {
@@ -34,16 +34,17 @@ if (-not (Test-Path $OutputPath)) {
 
 New-Item -Path $StageRoot -ItemType Directory -Force | Out-Null
 
-Get-ChildItem -Path $PluginRoot -Force | Where-Object {
-    $name = $_.Name
-    foreach ($pattern in $excludePatterns) {
-        if ($name -like $pattern) {
-            return $false
-        }
+foreach ($item in $runtimeItems) {
+    $sourcePath = Join-Path $PluginRoot $item
+    if (Test-Path $sourcePath) {
+        Copy-Item -Path $sourcePath -Destination $StageRoot -Recurse -Force
     }
-    return $true
-} | ForEach-Object {
-    Copy-Item -Path $_.FullName -Destination $StageRoot -Recurse -Force
+}
+
+# Include translations when present so localized UI keeps working.
+$i18nPath = Join-Path $PluginRoot "i18n"
+if (Test-Path $i18nPath) {
+    Copy-Item -Path $i18nPath -Destination $StageRoot -Recurse -Force
 }
 
 $StageLicense = Join-Path $StageRoot "LICENSE"

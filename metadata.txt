@@ -5,13 +5,13 @@
 [general]
 name=Field Guide
 qgisMinimumVersion=3.0
-description=Field PDF reports with georeferenced hyperlinks / Relatorios PDF de campo com hiperlinks georreferenciados.
-version=1.0
+description=Field routes, PDF reports, and polygon sampling in QGIS / Rotas de campo, relatorios PDF e amostragem por poligonos no QGIS.
+version=2.0
 author=Caio Arantes, FARM Analytica
 email=caio.arantes@farmanaltyica.com.br
 qgisMaximumVersion=4.99
 
-about=Capture map points in QGIS, import and export CSV, open Google Maps routes, and generate mobile-friendly PDF reports with clickable links. / Capture pontos no mapa no QGIS, importe e exporte CSV, abra rotas no Google Maps e gere relatorios PDF mobile-friendly com links clicaveis.
+about=Capture points in QGIS, delete selected session marks, import and export CSV, open Google Maps routes, generate mobile-friendly PDF reports, and create centroid, grid, spread-optimized, or zigzag sampling patterns inside polygon features. / Capture pontos no QGIS, exclua marcacoes selecionadas da sessao, importe e exporte CSV, abra rotas no Google Maps, gere relatorios PDF mobile-friendly e crie padroes de amostragem por centroide, grade, distribuicao otimizada ou transecto em zig-zag dentro de feicoes poligonais.
 
 tracker=https://github.com/farmanalytica/fieldguide/issues
 repository=https://github.com/farmanalytica/fieldguide
@@ -20,11 +20,10 @@ repository=https://github.com/farmanalytica/fieldguide
 # Recommended items:
 
 hasProcessingProvider=no
-# Uncomment the following line and add your changelog:
-# changelog=
+changelog=2.0 - Added polygon feature sampling with configurable marks per feature, centroid/grid/spread-optimized/zigzag methods, selected-mark deletion, and documentation/UI refinements.
 
 # Tags are comma separated with spaces allowed
-tags=python,qgis,pdf,field guide,guia de campo,csv,google maps
+tags=python,qgis,pdf,field guide,guia de campo,csv,google maps,sampling,soil sampling,polygon
 
 homepage=https://farmanalytica.github.io/fieldguide/
 category=Plugins
